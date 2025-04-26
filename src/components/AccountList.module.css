@@ -1,0 +1,63 @@
+/* src/components/AccountList.module.css */
+
+.container {
+margin: 40px auto; /* Aumentar el margen superior e inferior */
+max-width: 800px;
+padding: 20px; /* Agregar relleno interno */
+border-radius: 12px; /* Bordes redondeados */
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombreado ligero */
+background-color: #ffffff; /* Fondo blanco */
+}
+
+.title {
+text-align: center; /* Centrar el título */
+font-size: 24px; /* Tamaño de fuente más grande */
+margin-bottom: 20px; /* Espacio debajo del título */
+color: #333333; /* Color de texto oscuro */
+}
+
+.select {
+margin-bottom: 20px;
+display: block; /* Asegurar que el select ocupe todo el ancho */
+}
+
+.table {
+width: 100%;
+border-collapse: collapse; /* Unir bordes de celdas */
+margin-top: 20px; /* Espacio entre el select y la tabla */
+}
+
+.cell {
+white-space: nowrap; /* Evitar que el texto se rompa */
+overflow: hidden; /* Ocultar contenido que exceda el ancho */
+text-overflow: ellipsis; /* Mostrar puntos suspensivos (...) */
+padding: 12px; /* Aumentar el relleno en las celdas */
+border: 1px solid #dddddd; /* Bordes claros en las celdas */
+text-align: center; /* Centrar el texto en las celdas */
+}
+
+.actions {
+display: flex;
+justify-content: center; /* Centrar los botones horizontalmente */
+gap: 8px; /* Espacio entre los botones */
+}
+
+@media (max-width: 600px) {
+.container {
+    padding: 15px; /* Reducir el relleno en pantallas pequeñas */
+    margin: 20px auto; /* Reducir el margen en pantallas pequeñas */
+}
+
+.title {
+    font-size: 20px; /* Reducir el tamaño del título */
+}
+
+.table {
+    font-size: 14px; /* Reducir el tamaño de fuente en pantallas pequeñas */
+}
+
+.cell {
+    font-size: 12px; /* Ajustar el tamaño del texto en celdas */
+    padding: 8px; /* Reducir el relleno en las celdas */
+}
+}
