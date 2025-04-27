@@ -47,10 +47,17 @@ refresh: boolean; // Prop para forzar la actualización
 export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
 const [accounts, setAccounts] = useState<Account[]>([]);
 const [selectedEmail, setSelectedEmail] = useState<string>('');
-const [openModal, setOpenModal] = useState(false); // Estado para controlar el modal
+
+// Estados para la edición
+const [openModal, setOpenModal] = useState(false); // Controla el modal de edición
 const [editingDevice, setEditingDevice] = useState<Device | null>(null); // Dispositivo en edición
 const [editingAccountId, setEditingAccountId] = useState<string>(''); // ID de la cuenta en edición
 const [editingDeviceIndex, setEditingDeviceIndex] = useState<number | null>(null); // Índice del dispositivo en edición
+
+// Estados para la búsqueda
+const [searchTerm, setSearchTerm] = useState<string>(''); // Término de búsqueda
+const [searchResult, setSearchResult] = useState<{ device: Device; alias: string } | null>(null); // Resultado de la búsqueda
+const [openSearchModal, setOpenSearchModal] = useState(false); // Controla el modal de búsqueda
 
 // Obtener cuentas de Supabase
 useEffect(() => {
@@ -91,7 +98,7 @@ setEditingDeviceIndex(deviceIndex);
 setOpenModal(true);
 };
 
-// Cerrar el modal
+// Cerrar el modal de edición
 const closeEditModal = () => {
 setEditingDevice(null);
 setEditingAccountId('');
@@ -118,6 +125,32 @@ closeEditModal();
 fetchAccounts(); // Actualiza los datos después de guardar
 };
 
+// Buscar dispositivo por número de tarjeta de acceso
+const handleSearch = () => {
+const foundAccount = accounts.find((acc) =>
+    acc.devices.some((device) => device.access_card_number === searchTerm)
+);
+
+if (foundAccount) {
+    const foundDevice = foundAccount.devices.find(
+    (device) => device.access_card_number === searchTerm
+    );
+
+    if (foundDevice) {
+    setSearchResult({ device: foundDevice, alias: foundAccount.alias });
+    setOpenSearchModal(true); // Abrir el modal si se encuentra el dispositivo
+    }
+} else {
+    alert('No se encontró ningún dispositivo con ese número de tarjeta.');
+}
+};
+
+// Cerrar el modal de búsqueda
+const closeSearchModal = () => {
+setSearchResult(null);
+setOpenSearchModal(false);
+};
+
 // Filtrar cuentas por correo electrónico
 const filteredAccounts = selectedEmail
 ? accounts.filter((acc) => acc.email === selectedEmail)
@@ -125,26 +158,49 @@ const filteredAccounts = selectedEmail
 
 return (
 <>
+    {/* Contenedor principal */}
     <TableContainer component={Paper} className={styles.container}>
     <Typography variant="h5" className={styles.title}>
         Lista de Cuentas
     </Typography>
-    <div >
-        <Select
+
+    {/* Campo de Búsqueda */}
+    <div>
+        <TextField
+        fullWidth
+        label="Buscar por Número de Tarjeta"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        margin="normal"
+        />
+        <Button
+        fullWidth
+        variant="contained"
+        color="primary"
+        onClick={handleSearch}
+        style={{ marginBottom: '20px' }}
+        >
+        Buscar
+        </Button>
+    </div>
+
+    {/* Selector de Correo Electrónico */}
+    <Select
         value={selectedEmail}
         onChange={(e) => setSelectedEmail(e.target.value)}
         displayEmpty
         fullWidth
         className={styles.select}
-        >
+    >
         <MenuItem value="">Todos</MenuItem>
         {Array.from(new Set(accounts.map((acc) => acc.email))).map((email) => (
-            <MenuItem key={email} value={email}>
+        <MenuItem key={email} value={email}>
             {email}
-            </MenuItem>
+        </MenuItem>
         ))}
-        </Select>
-    </div>
+    </Select>
+
+    {/* Tabla de Cuentas */}
     <Table className={styles.table}>
         <TableHead>
         <TableRow>
@@ -165,7 +221,7 @@ return (
             <TableRow key={`${acc.id}-${index}`}>
                 {/* Mostrar el correo solo en la primera fila del dispositivo */}
                 <TableCell className={styles.cell}>{index === 0 ? acc.email : ''}</TableCell>
-                <TableCell className={styles.cell}>{index === 0 ? acc.alias : ''}</TableCell> {/* Mostrar alias */}
+                <TableCell className={styles.cell}>{index === 0 ? acc.alias : ''}</TableCell>
                 <TableCell className={styles.cell}>{device.decoder_id}</TableCell>
                 <TableCell className={styles.cell}>{device.access_card_number}</TableCell>
                 <TableCell className={styles.cell}>{device.balance}</TableCell>
@@ -207,6 +263,42 @@ return (
         </TableBody>
     </Table>
     </TableContainer>
+
+    {/* Modal para mostrar el resultado de la búsqueda */}
+    <Dialog open={openSearchModal} onClose={closeSearchModal}>
+    <DialogTitle>Resultado de la Búsqueda</DialogTitle>
+    <DialogContent>
+        {searchResult ? (
+        <div>
+            <Typography variant="body1">
+            <strong>Alias:</strong> {searchResult.alias}
+            </Typography>
+            <Typography variant="body1">
+            <strong>ID Decodificador:</strong> {searchResult.device.decoder_id}
+            </Typography>
+            <Typography variant="body1">
+            <strong>Número de Tarjeta:</strong> {searchResult.device.access_card_number}
+            </Typography>
+            <Typography variant="body1">
+            <strong>Saldo:</strong> {searchResult.device.balance}
+            </Typography>
+            <Typography variant="body1">
+            <strong>Días Restantes:</strong> {searchResult.device.days_remaining}
+            </Typography>
+            <Typography variant="body1">
+            <strong>Habitación:</strong> {searchResult.device.room_number}
+            </Typography>
+        </div>
+        ) : (
+        <Typography variant="body1">No se encontraron resultados.</Typography>
+        )}
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={closeSearchModal} color="secondary">
+        Cerrar
+        </Button>
+    </DialogActions>
+    </Dialog>
 
     {/* Modal para editar un dispositivo */}
     <Dialog open={openModal} onClose={closeEditModal}>
