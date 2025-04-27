@@ -19,15 +19,17 @@ DialogTitle,
 DialogContent,
 DialogActions,
 TextField,
+Grid,
 } from '@mui/material';
 import styles from './AccountList.module.css'; // Importar estilos CSS
+
 
 // Interfaz para un dispositivo
 interface Device {
 decoder_id: string;
 access_card_number: string;
 balance: number;
-days_remaining: number;
+cutoff_date: string; // Fecha de corte en formato ISO (YYYY-MM-DD)
 room_number: string;
 }
 
@@ -57,6 +59,7 @@ const [editingDeviceIndex, setEditingDeviceIndex] = useState<number | null>(null
 // Estados para la búsqueda
 const [searchTerm, setSearchTerm] = useState<string>(''); // Término de búsqueda
 const [searchResult, setSearchResult] = useState<{ device: Device; alias: string } | null>(null); // Resultado de la búsqueda
+// Removed unused selectedAlias state
 const [openSearchModal, setOpenSearchModal] = useState(false); // Controla el modal de búsqueda
 
 // Obtener cuentas de Supabase
@@ -81,12 +84,7 @@ const account = accounts.find((acc) => acc.id === accountId);
 if (!account) return;
 
 const updatedDevices = account.devices.filter((_, index) => index !== deviceIndex);
-
-await supabase
-    .from('accounts')
-    .update({ devices: updatedDevices })
-    .eq('id', accountId);
-
+await supabase.from('accounts').update({ devices: updatedDevices }).eq('id', accountId);
 fetchAccounts(); // Actualiza los datos después de eliminar
 };
 
@@ -116,11 +114,7 @@ if (!account) return;
 const updatedDevices = [...account.devices];
 updatedDevices[editingDeviceIndex] = editingDevice;
 
-await supabase
-    .from('accounts')
-    .update({ devices: updatedDevices })
-    .eq('id', editingAccountId);
-
+await supabase.from('accounts').update({ devices: updatedDevices }).eq('id', editingAccountId);
 closeEditModal();
 fetchAccounts(); // Actualiza los datos después de guardar
 };
@@ -128,20 +122,20 @@ fetchAccounts(); // Actualiza los datos después de guardar
 // Buscar dispositivo por número de tarjeta de acceso
 const handleSearch = () => {
 const foundAccount = accounts.find((acc) =>
-    acc.devices.some((device) => device.access_card_number === searchTerm)
+acc.devices.some((device) => device.access_card_number === searchTerm)
 );
 
 if (foundAccount) {
-    const foundDevice = foundAccount.devices.find(
-    (device) => device.access_card_number === searchTerm
-    );
+const foundDevice = foundAccount.devices.find(
+(device) => device.access_card_number === searchTerm
+);
 
-    if (foundDevice) {
-    setSearchResult({ device: foundDevice, alias: foundAccount.alias });
-    setOpenSearchModal(true); // Abrir el modal si se encuentra el dispositivo
-    }
+if (foundDevice) {
+setSearchResult({ device: foundDevice, alias: foundAccount.alias });
+setOpenSearchModal(true); // Abrir el modal si se encuentra el dispositivo
+}
 } else {
-    alert('No se encontró ningún dispositivo con ese número de tarjeta.');
+alert('No se encontró ningún dispositivo con ese número de tarjeta.');
 }
 };
 
@@ -151,118 +145,130 @@ setSearchResult(null);
 setOpenSearchModal(false);
 };
 
+// Función para verificar si la fecha de corte está vencida
+const isExpired = (cutoffDate: string): boolean => {
+const today = new Date();
+const cutoff = new Date(cutoffDate);
+return cutoff < today;
+};
+
 // Filtrar cuentas por correo electrónico
 const filteredAccounts = selectedEmail
 ? accounts.filter((acc) => acc.email === selectedEmail)
 : accounts;
 
 return (
-<>
-    {/* Contenedor principal */}
-    <TableContainer component={Paper} className={styles.container}>
-    <Typography variant="h5" className={styles.title}>
+<Grid container spacing={3}>
+    {/* Columna Principal: Tabla de Cuentas */}
+    <Grid >
+    <Paper style={{ padding: '16px' }}>
+        <Typography variant="h5" style={{ marginBottom: '16px' }}>
         Lista de Cuentas
-    </Typography>
+        </Typography>
 
-    {/* Campo de Búsqueda */}
-    <div>
+        {/* Campo de Búsqueda */}
+        <Grid>
         <TextField
-        fullWidth
-        label="Buscar por Número de Tarjeta"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        margin="normal"
+            fullWidth
+            label="Buscar por Número de Tarjeta"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            margin="normal"
         />
         <Button
-        fullWidth
-        variant="contained"
-        color="primary"
-        onClick={handleSearch}
-        style={{ marginBottom: '20px' }}
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={handleSearch}
+            style={{ marginBottom: '20px' }}
         >
-        Buscar
+            Buscar
         </Button>
-    </div>
+        </Grid>
 
-    {/* Selector de Correo Electrónico */}
-    <Select
+        {/* Selector de Correo Electrónico */}
+        <Select
         value={selectedEmail}
         onChange={(e) => setSelectedEmail(e.target.value)}
         displayEmpty
         fullWidth
-        className={styles.select}
-    >
+        style={{ marginBottom: '16px' }}
+        >
         <MenuItem value="">Todos</MenuItem>
         {Array.from(new Set(accounts.map((acc) => acc.email))).map((email) => (
-        <MenuItem key={email} value={email}>
+            <MenuItem key={email} value={email}>
             {email}
-        </MenuItem>
+            </MenuItem>
         ))}
-    </Select>
+        </Select>
 
-    {/* Tabla de Cuentas */}
-    <Table className={styles.table}>
-        <TableHead>
-        <TableRow>
-            <TableCell className={styles.cell}>Email</TableCell>
-            <TableCell className={styles.cell}>Alias</TableCell>
-            <TableCell className={styles.cell}>ID Decodificador</TableCell>
-            <TableCell className={styles.cell}>Número de Tarjeta</TableCell>
-            <TableCell className={styles.cell}>Saldo</TableCell>
-            <TableCell className={styles.cell}>Días Restantes</TableCell>
-            <TableCell className={styles.cell}>Habitación</TableCell>
-            <TableCell className={styles.cell}>Acciones</TableCell>
-        </TableRow>
-        </TableHead>
-        <TableBody>
-        {/* Iterar sobre las cuentas y sus dispositivos */}
-        {filteredAccounts.flatMap((acc) =>
-            acc.devices.map((device, index) => (
-            <TableRow key={`${acc.id}-${index}`}>
-                {/* Mostrar el correo solo en la primera fila del dispositivo */}
-                <TableCell className={styles.cell}>{index === 0 ? acc.email : ''}</TableCell>
-                <TableCell className={styles.cell}>{index === 0 ? acc.alias : ''}</TableCell>
-                <TableCell className={styles.cell}>{device.decoder_id}</TableCell>
-                <TableCell className={styles.cell}>{device.access_card_number}</TableCell>
-                <TableCell className={styles.cell}>{device.balance}</TableCell>
-                <TableCell className={styles.cell}>{device.days_remaining}</TableCell>
-                <TableCell className={styles.cell}>{device.room_number}</TableCell>
-                <TableCell className={styles.cell}>
-                <div className={styles.actions}>
-                    {/* Botón para eliminar toda la cuenta */}
-                    {index === 0 && (
-                    <Button
-                        onClick={() => handleDeleteAccount(acc.id)}
-                        color="error"
-                        size="small"
-                    >
-                        Eliminar Cuenta
-                    </Button>
-                    )}
-                    {/* Botón para editar el dispositivo */}
-                    <Button
-                    onClick={() => openEditModal(acc.id, device, index)}
-                    color="primary"
-                    size="small"
-                    >
-                    Editar
-                    </Button>
-                    {/* Botón para eliminar el dispositivo */}
-                    <Button
-                    onClick={() => handleDeleteDevice(acc.id, index)}
-                    color="error"
-                    size="small"
-                    >
-                    Eliminar
-                    </Button>
-                </div>
-                </TableCell>
+        {/* Tabla de Cuentas */}
+        <TableContainer component={Paper}>
+        <Table>
+            <TableHead>
+            <TableRow>
+                <TableCell>Email</TableCell>
+                <TableCell>Alias</TableCell>
+                <TableCell>ID Decodificador</TableCell>
+                <TableCell>Número de Tarjeta</TableCell>
+                <TableCell>Saldo</TableCell>
+                <TableCell>Fecha de Corte</TableCell>
+                <TableCell>Habitación</TableCell>
+                <TableCell>Acciones</TableCell>
             </TableRow>
-            ))
-        )}
-        </TableBody>
-    </Table>
-    </TableContainer>
+            </TableHead>
+            <TableBody>
+            {filteredAccounts.flatMap((acc) =>
+                acc.devices.map((device, index) => {
+                const expired = isExpired(device.cutoff_date); // Verificar si la fecha está vencida
+                return (
+                    <TableRow
+                    key={`${acc.id}-${index}`}
+                    className={expired ? styles.expiredRow : ''} // Aplicar clase si está vencida
+                    >
+                    <TableCell>{index === 0 ? acc.email : ''}</TableCell>
+                    <TableCell>{index === 0 ? acc.alias : ''}</TableCell>
+                    <TableCell>{device.decoder_id}</TableCell>
+                    <TableCell>{device.access_card_number}</TableCell>
+                    <TableCell>{device.balance}</TableCell>
+                    <TableCell>{device.cutoff_date}</TableCell>
+                    <TableCell>{device.room_number}</TableCell>
+                    <TableCell>
+                        <div>
+                        {index === 0 && (
+                            <Button
+                            onClick={() => handleDeleteAccount(acc.id)}
+                            color="error"
+                            size="small"
+                            >
+                            Eliminar Cuenta
+                            </Button>
+                        )}
+                        <Button
+                            onClick={() => openEditModal(acc.id, device, index)}
+                            color="primary"
+                            size="small"
+                        >
+                            Editar
+                        </Button>
+                        <Button
+                            onClick={() => handleDeleteDevice(acc.id, index)}
+                            color="error"
+                            size="small"
+                        >
+                            Eliminar
+                        </Button>
+                        </div>
+                    </TableCell>
+                    </TableRow>
+                );
+                })
+            )}
+            </TableBody>
+        </Table>
+        </TableContainer>
+    </Paper>
+    </Grid>
 
     {/* Modal para mostrar el resultado de la búsqueda */}
     <Dialog open={openSearchModal} onClose={closeSearchModal}>
@@ -282,12 +288,17 @@ return (
             <Typography variant="body1">
             <strong>Saldo:</strong> {searchResult.device.balance}
             </Typography>
-            <Typography variant="body1">
-            <strong>Días Restantes:</strong> {searchResult.device.days_remaining}
+            <Typography variant="body1" style={{ color: isExpired(searchResult.device.cutoff_date) ? '#c62828' : 'inherit' }}>
+            <strong>Fecha de Corte:</strong> {searchResult.device.cutoff_date}
             </Typography>
             <Typography variant="body1">
             <strong>Habitación:</strong> {searchResult.device.room_number}
             </Typography>
+            {isExpired(searchResult.device.cutoff_date) && (
+            <Typography variant="body2" style={{ color: '#c62828', fontWeight: 'bold' }}>
+                ¡La fecha de corte está vencida!
+            </Typography>
+            )}
         </div>
         ) : (
         <Typography variant="body1">No se encontraron resultados.</Typography>
@@ -339,18 +350,26 @@ return (
         margin="normal"
         />
         <TextField
-        label="Días Restantes"
-        type="number"
-        value={editingDevice?.days_remaining || 0}
+        label="Fecha de Corte"
+        type="date"
+        value={editingDevice?.cutoff_date || ''}
         onChange={(e) =>
             setEditingDevice((prev) => ({
             ...prev!,
-            days_remaining: Number(e.target.value),
+            cutoff_date: e.target.value,
             }))
         }
         fullWidth
         margin="normal"
+        InputLabelProps={{
+            shrink: true,
+        }}
         />
+        {editingDevice && isExpired(editingDevice.cutoff_date) && (
+        <Typography variant="body2" style={{ color: '#c62828', fontWeight: 'bold' }}>
+            ¡La fecha de corte está vencida!
+        </Typography>
+        )}
         <TextField
         label="Número de Habitación"
         value={editingDevice?.room_number || ''}
@@ -373,6 +392,6 @@ return (
         </Button>
     </DialogActions>
     </Dialog>
-</>
+</Grid>
 );
 };

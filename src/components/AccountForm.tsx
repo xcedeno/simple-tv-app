@@ -12,6 +12,10 @@ IconButton,
 Alert,
 } from '@mui/material';
 import { AddCircle, RemoveCircle } from '@mui/icons-material';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
+import dayjs from 'dayjs';
 import styles from './AccountForm.module.css'; // Importar los estilos
 
 // Definición de tipos actualizada
@@ -19,7 +23,7 @@ interface Device {
 decoder_id: string;
 access_card_number: string;
 balance: number;
-days_remaining: number;
+cutoff_date: string; // Fecha de corte en formato ISO (YYYY-MM-DD)
 room_number: string;
 }
 
@@ -38,7 +42,9 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
 const [formData, setFormData] = useState<Account>({
 email: account?.email || '',
 alias: account?.alias || '',
-devices: account?.devices || [{ decoder_id: '', access_card_number: '', balance: 0, days_remaining: 0, room_number: '' }],
+devices: account?.devices || [
+    { decoder_id: '', access_card_number: '', balance: 0, cutoff_date: '', room_number: '' },
+],
 });
 const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -53,7 +59,7 @@ setFormData((prev) => ({ ...prev, alias: e.target.value }));
 const handleDeviceChange = (
 index: number,
 field: keyof Device,
-value: string | number
+value: string | number | Date
 ) => {
 setFormData((prev) => {
     const updatedDevices = [...prev.devices];
@@ -67,7 +73,7 @@ setFormData((prev) => ({
     ...prev,
     devices: [
     ...prev.devices,
-    { decoder_id: '', access_card_number: '', balance: 0, days_remaining: 0, room_number: '' },
+    { decoder_id: '', access_card_number: '', balance: 0, cutoff_date: '', room_number: '' },
     ],
 }));
 };
@@ -83,7 +89,7 @@ const resetForm = () => {
 setFormData({
     email: '',
     alias: '',
-    devices: [{ decoder_id: '', access_card_number: '', balance: 0, days_remaining: 0, room_number: '' }],
+    devices: [{ decoder_id: '', access_card_number: '', balance: 0, cutoff_date: '', room_number: '' }],
 });
 };
 
@@ -138,21 +144,22 @@ try {
 };
 
 return (
-<Paper className={styles.container}>
+<LocalizationProvider dateAdapter={AdapterDayjs}>
+    <Paper className={styles.container}>
     <Typography variant="h5" className={styles.title}>
-    {account?.email ? 'Editar Cuenta' : 'Crear Cuenta'}
+        {account?.email ? 'Editar Cuenta' : 'Crear Cuenta'}
     </Typography>
 
     {/* Mostrar mensaje de error de conexión */}
     {connectionError && (
-    <Alert severity="error" className={styles.formField}>
+        <Alert severity="error" className={styles.formField}>
         Error de conexión: {connectionError}
-    </Alert>
+        </Alert>
     )}
 
     <form onSubmit={handleSubmit}>
-    {/* Campo de Correo Electrónico */}
-    <TextField
+        {/* Campo de Correo Electrónico */}
+        <TextField
         fullWidth
         label="Correo Electrónico"
         type="email"
@@ -160,98 +167,104 @@ return (
         onChange={handleEmailChange}
         required
         className={styles.formField}
-    />
+        />
 
-    {/* Campo de Alias */}
-    <TextField
+        {/* Campo de Alias */}
+        <TextField
         fullWidth
         label="Alias"
         value={formData.alias}
         onChange={handleAliasChange}
         className={styles.formField}
-    />
+        />
 
-    {/* Campos Dinámicos para Dispositivos */}
-    {formData.devices.map((device, index) => (
+        {/* Campos Dinámicos para Dispositivos */}
+        {formData.devices.map((device, index) => (
         <Paper key={index} className={styles.deviceSection}>
-        <Typography variant="subtitle1" className={styles.deviceTitle}>
+            <Typography variant="subtitle1" className={styles.deviceTitle}>
             Dispositivo {index + 1}
-        </Typography>
-        <Grid container spacing={2}>
+            </Typography>
+            <Grid container spacing={2}>
             <Grid>
-            <TextField
+                <TextField
                 fullWidth
                 label="ID del Decodificador"
                 value={device.decoder_id}
                 onChange={(e) => handleDeviceChange(index, 'decoder_id', e.target.value)}
                 required
-            />
+                />
             </Grid>
             <Grid>
-            <TextField
+                <TextField
                 fullWidth
                 label="Número de Tarjeta de Acceso"
                 value={device.access_card_number}
                 onChange={(e) => handleDeviceChange(index, 'access_card_number', e.target.value)}
                 required
-            />
+                />
             </Grid>
             <Grid>
-            <TextField
+                <TextField
                 fullWidth
                 label="Saldo"
                 type="number"
                 value={device.balance}
                 onChange={(e) => handleDeviceChange(index, 'balance', Number(e.target.value))}
-            />
+                />
             </Grid>
             <Grid>
-            <TextField
-                fullWidth
-                label="Días Restantes"
-                type="number"
-                value={device.days_remaining}
-                onChange={(e) => handleDeviceChange(index, 'days_remaining', Number(e.target.value))}
-            />
+                <DatePicker
+                label="Fecha de Corte"
+                value={device.cutoff_date ? dayjs(device.cutoff_date) : null}
+                onChange={(date: dayjs.Dayjs | null) => {
+                    handleDeviceChange(
+                    index,
+                    'cutoff_date',
+                    date?.format('YYYY-MM-DD') || ''
+                    );
+                }}
+                slotProps={{ textField: { fullWidth: true } }}
+                />
             </Grid>
             <Grid>
-            <TextField
+                <TextField
                 fullWidth
                 label="Número de Habitación"
                 value={device.room_number}
                 onChange={(e) => handleDeviceChange(index, 'room_number', e.target.value)}
-            />
+                />
             </Grid>
-        </Grid>
-        <IconButton onClick={() => removeDevice(index)} color="error">
+            </Grid>
+            <IconButton onClick={() => removeDevice(index)} color="error">
             <RemoveCircle />
-        </IconButton>
+            </IconButton>
         </Paper>
-    ))}
+        ))}
 
-    {/* Botón para Agregar un Nuevo Dispositivo */}
-    <Button
+        {/* Botón para Agregar un Nuevo Dispositivo */}
+        <Button
         fullWidth
         variant="outlined"
         startIcon={<AddCircle />}
         onClick={addDevice}
         className={styles.formField}
-    >
-        Agregar Dispositivo
-    </Button>
-
-    {/* Botones de Envío */}
-    <div className={styles.buttonContainer}>
-        <Button
-        fullWidth
-        type="submit"
-        variant="contained"
-        color="primary"
         >
-        {account?.email ? 'Actualizar' : 'Guardar'}
+        Agregar Dispositivo
         </Button>
-    </div>
+
+        {/* Botones de Envío */}
+        <div className={styles.buttonContainer}>
+        <Button
+            fullWidth
+            type="submit"
+            variant="contained"
+            color="primary"
+        >
+            {account?.email ? 'Actualizar' : 'Guardar'}
+        </Button>
+        </div>
     </form>
-</Paper>
+    </Paper>
+</LocalizationProvider>
 );
 };
