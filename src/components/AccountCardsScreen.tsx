@@ -50,7 +50,8 @@ return (
         .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]; // Ordenar por fecha y tomar la más cercana
 
         return (
-        <Grid >
+        // Asegurarse de que el Grid tenga las propiedades correctas
+        <Grid>
             {/* Componente de Tarjeta */}
             <AccountCard
             alias={account.alias}
