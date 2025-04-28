@@ -9,6 +9,7 @@ TableCell,
 TableContainer,
 TableHead,
 TableRow,
+Tooltip,
 Paper,
 Typography,
 Select,
@@ -22,6 +23,7 @@ TextField,
 Grid,
 } from '@mui/material';
 import styles from './AccountList.module.css'; // Importar estilos CSS
+import EditIcon from '@mui/icons-material/Edit'; // Importar el ícono de edición
 
 
 // Interfaz para un dispositivo
@@ -72,21 +74,6 @@ const { data } = await supabase.from('accounts').select('*');
 setAccounts(data || []);
 };
 
-// Eliminar una cuenta
-const handleDeleteAccount = async (id: string) => {
-await supabase.from('accounts').delete().eq('id', id);
-fetchAccounts(); // Actualiza los datos después de eliminar
-};
-
-// Eliminar un dispositivo
-const handleDeleteDevice = async (accountId: string, deviceIndex: number) => {
-const account = accounts.find((acc) => acc.id === accountId);
-if (!account) return;
-
-const updatedDevices = account.devices.filter((_, index) => index !== deviceIndex);
-await supabase.from('accounts').update({ devices: updatedDevices }).eq('id', accountId);
-fetchAccounts(); // Actualiza los datos después de eliminar
-};
 
 // Abrir el modal para editar un dispositivo
 const openEditModal = (accountId: string, device: Device, deviceIndex: number) => {
@@ -235,29 +222,17 @@ return (
                     <TableCell>{device.room_number}</TableCell>
                     <TableCell>
                         <div>
-                        {index === 0 && (
-                            <Button
-                            onClick={() => handleDeleteAccount(acc.id)}
-                            color="error"
-                            size="small"
-                            >
-                            Eliminar Cuenta
-                            </Button>
-                        )}
-                        <Button
-                            onClick={() => openEditModal(acc.id, device, index)}
-                            color="primary"
-                            size="small"
-                        >
-                            Editar
-                        </Button>
-                        <Button
-                            onClick={() => handleDeleteDevice(acc.id, index)}
-                            color="error"
-                            size="small"
-                        >
-                            Eliminar
-                        </Button>
+                        
+                    {/* Ícono para editar el dispositivo */}
+                    <Tooltip title="Editar">
+                    <EditIcon
+                        onClick={() => openEditModal(acc.id, device, index)}
+                        style={{ cursor: 'pointer', marginLeft: '8px' }}
+                        color="primary"
+                    />
+                    </Tooltip>
+                        
+                    
                         </div>
                     </TableCell>
                     </TableRow>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { Paper, Typography, Grid } from '@mui/material';
+import { Paper, Typography, Grid, Button } from '@mui/material';
 import { AccountCard } from './AccountCard';
 
 // Interfaz para un dispositivo
@@ -35,11 +35,32 @@ const { data } = await supabase.from('accounts').select('*');
 setAccounts(data || []);
 };
 
+// Función para descargar el archivo .xls usando una URL directa
+const downloadFile = () => {
+try {
+    // URL directa del archivo
+    const fileUrl = 'https://prxzjevldfpjwscwuarx.supabase.co/storage/v1/object/public/forms//Simple-tv.xls';
+
+    // Crear un enlace temporal y simular un clic para descargar el archivo
+    const link = document.createElement('a');
+    link.href = fileUrl; // URL directa del archivo
+    link.download = 'Simple-tv.xls'; // Nombre del archivo al descargar
+    link.click();
+} catch (err) {
+    console.error('Error al descargar el archivo:', err);
+    alert('Ocurrió un error al descargar el archivo.');
+}
+};
+
 return (
 <Paper style={{ padding: '16px', marginTop: '20px' }}>
-    <Typography variant="h5" style={{ marginBottom: '16px' }}>
-    Tarjetas de Cuentas
-    </Typography>
+    {/* Título y Botón "Generar Solicitud" */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <Typography variant="h5">Tarjetas de Cuentas</Typography>
+    <Button variant="contained" color="primary" onClick={downloadFile}>
+        Generar Solicitud
+    </Button>
+    </div>
 
     {/* Cuadrícula Responsiva */}
     <Grid container spacing={3}>
@@ -50,12 +71,10 @@ return (
         .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]; // Ordenar por fecha y tomar la más cercana
 
         return (
-        <Grid >
+        // Asegurarse de que el Grid tenga las propiedades correctas
+        <Grid>
             {/* Componente de Tarjeta */}
-            <AccountCard
-            alias={account.alias}
-            nearestCutoffDate={nearestCutoffDate || ''}
-            />
+            <AccountCard alias={account.alias} nearestCutoffDate={nearestCutoffDate || ''} />
         </Grid>
         );
     })}
