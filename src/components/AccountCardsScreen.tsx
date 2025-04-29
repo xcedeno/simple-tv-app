@@ -74,7 +74,11 @@ return (
         // Asegurarse de que el Grid tenga las propiedades correctas
         <Grid>
             {/* Componente de Tarjeta */}
-            <AccountCard alias={account.alias} nearestCutoffDate={nearestCutoffDate || ''} />
+            <AccountCard 
+                alias={account.alias} 
+                nearestCutoffDate={nearestCutoffDate || ''} 
+                roomNumbers={account.devices.map(device => device.room_number)} 
+            />
         </Grid>
         );
     })}

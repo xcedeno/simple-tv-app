@@ -8,9 +8,10 @@ import dayjs from 'dayjs';
 interface AccountCardProps {
 alias: string;
 nearestCutoffDate: string; // Fecha de corte más próxima en formato ISO (YYYY-MM-DD)
+roomNumbers: string[]; // Lista de números de habitación asociados al alias
 }
 
-export const AccountCard: React.FC<AccountCardProps> = ({ alias, nearestCutoffDate }) => {
+export const AccountCard: React.FC<AccountCardProps> = ({ alias, nearestCutoffDate, roomNumbers }) => {
 // Función para calcular los días restantes
 const getDaysRemaining = (cutoffDate: string): number => {
 const today = dayjs();
@@ -40,6 +41,10 @@ return (
         </Typography>
         <Typography variant="body1">
         Fecha de Corte Más Próxima: {nearestCutoffDate}
+        </Typography >
+        {/* Mostrar los números de habitación */}
+        <Typography variant="body1" style={{ fontWeight: 'bold' }}>
+        Habitaciones: {roomNumbers.length > 0 ? roomNumbers.join(', ') : 'Sin habitaciones'}
         </Typography>
     </div>
     <Typography variant="body2" style={{ marginTop: '8px', textAlign: 'center' }}>
