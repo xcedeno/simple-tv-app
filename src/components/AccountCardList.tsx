@@ -38,11 +38,15 @@ return (
         .map((device) => device.cutoff_date)
         .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]; // Ordenar por fecha y tomar la más cercana
 
+    // Extraer los números de habitación de los dispositivos
+    const roomNumbers = account.devices.map((device) => device.room_number);
+
     return (
         <AccountCard
         key={account.id}
         alias={account.alias}
         nearestCutoffDate={nearestCutoffDate || ''}
+        roomNumbers={roomNumbers}
         />
     );
     })}
