@@ -1,5 +1,4 @@
 // src/components/AccountList.tsx
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import {
@@ -21,10 +20,10 @@ DialogContent,
 DialogActions,
 TextField,
 Grid,
+TableSortLabel,
 } from '@mui/material';
 import styles from './AccountList.module.css'; // Importar estilos CSS
 import EditIcon from '@mui/icons-material/Edit'; // Importar el ícono de edición
-
 
 // Interfaz para un dispositivo
 interface Device {
@@ -51,6 +50,8 @@ refresh: boolean; // Prop para forzar la actualización
 export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
 const [accounts, setAccounts] = useState<Account[]>([]);
 const [selectedEmail, setSelectedEmail] = useState<string>('');
+const [sortBy, setSortBy] = useState<'room_number' | 'email' | 'alias'>('room_number'); // Criterio de ordenación
+const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Orden: ascendente o descendente
 
 // Estados para la edición
 const [openModal, setOpenModal] = useState(false); // Controla el modal de edición
@@ -61,7 +62,6 @@ const [editingDeviceIndex, setEditingDeviceIndex] = useState<number | null>(null
 // Estados para la búsqueda
 const [searchTerm, setSearchTerm] = useState<string>(''); // Término de búsqueda
 const [searchResult, setSearchResult] = useState<{ device: Device; alias: string } | null>(null); // Resultado de la búsqueda
-// Removed unused selectedAlias state
 const [openSearchModal, setOpenSearchModal] = useState(false); // Controla el modal de búsqueda
 
 // Obtener cuentas de Supabase
@@ -74,6 +74,42 @@ const { data } = await supabase.from('accounts').select('*');
 setAccounts(data || []);
 };
 
+// Función para ordenar las cuentas
+const sortedAccounts = (accounts: Account[]): Account[] => {
+return [...accounts].sort((a, b) => {
+    let comparison = 0;
+
+    if (sortBy === 'room_number') {
+    const firstRoom = a.devices[0]?.room_number || '';
+    const secondRoom = b.devices[0]?.room_number || '';
+    comparison = firstRoom.localeCompare(secondRoom);
+    } else if (sortBy === 'email') {
+    comparison = a.email.localeCompare(b.email);
+    } else if (sortBy === 'alias') {
+    comparison = a.alias.localeCompare(b.alias);
+    }
+
+    return sortOrder === 'asc' ? comparison : -comparison;
+});
+};
+
+// Filtrar cuentas por correo electrónico
+const filteredAccounts = selectedEmail
+? accounts.filter((acc) => acc.email === selectedEmail)
+: accounts;
+
+// Aplicar ordenación
+const displayedAccounts = sortedAccounts(filteredAccounts);
+
+// Manejar el cambio de criterio de ordenación
+const handleSort = (field: 'room_number' | 'email' | 'alias') => {
+if (sortBy === field) {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); // Cambiar el orden si se hace clic en el mismo campo
+} else {
+    setSortBy(field); // Cambiar el criterio de ordenación
+    setSortOrder('asc'); // Reiniciar el orden a ascendente
+}
+};
 
 // Abrir el modal para editar un dispositivo
 const openEditModal = (accountId: string, device: Device, deviceIndex: number) => {
@@ -94,13 +130,10 @@ setOpenModal(false);
 // Guardar cambios en el dispositivo
 const handleSaveDevice = async () => {
 if (!editingDevice || !editingAccountId || editingDeviceIndex === null) return;
-
 const account = accounts.find((acc) => acc.id === editingAccountId);
 if (!account) return;
-
 const updatedDevices = [...account.devices];
 updatedDevices[editingDeviceIndex] = editingDevice;
-
 await supabase.from('accounts').update({ devices: updatedDevices }).eq('id', editingAccountId);
 closeEditModal();
 fetchAccounts(); // Actualiza los datos después de guardar
@@ -109,20 +142,18 @@ fetchAccounts(); // Actualiza los datos después de guardar
 // Buscar dispositivo por número de tarjeta de acceso
 const handleSearch = () => {
 const foundAccount = accounts.find((acc) =>
-acc.devices.some((device) => device.access_card_number === searchTerm)
+    acc.devices.some((device) => device.access_card_number === searchTerm)
 );
-
 if (foundAccount) {
-const foundDevice = foundAccount.devices.find(
-(device) => device.access_card_number === searchTerm
-);
-
-if (foundDevice) {
-setSearchResult({ device: foundDevice, alias: foundAccount.alias });
-setOpenSearchModal(true); // Abrir el modal si se encuentra el dispositivo
-}
+    const foundDevice = foundAccount.devices.find(
+    (device) => device.access_card_number === searchTerm
+    );
+    if (foundDevice) {
+    setSearchResult({ device: foundDevice, alias: foundAccount.alias });
+    setOpenSearchModal(true); // Abrir el modal si se encuentra el dispositivo
+    }
 } else {
-alert('No se encontró ningún dispositivo con ese número de tarjeta.');
+    alert('No se encontró ningún dispositivo con ese número de tarjeta.');
 }
 };
 
@@ -139,20 +170,14 @@ const cutoff = new Date(cutoffDate);
 return cutoff < today;
 };
 
-// Filtrar cuentas por correo electrónico
-const filteredAccounts = selectedEmail
-? accounts.filter((acc) => acc.email === selectedEmail)
-: accounts;
-
 return (
 <Grid container spacing={3}>
     {/* Columna Principal: Tabla de Cuentas */}
-    <Grid >
+    <Grid>
     <Paper style={{ padding: '16px' }}>
         <Typography variant="h5" style={{ marginBottom: '16px' }}>
         Lista de Cuentas
         </Typography>
-
         {/* Campo de Búsqueda */}
         <Grid>
         <TextField
@@ -172,7 +197,6 @@ return (
             Buscar
         </Button>
         </Grid>
-
         {/* Selector de Correo Electrónico */}
         <Select
         value={selectedEmail}
@@ -188,24 +212,47 @@ return (
             </MenuItem>
         ))}
         </Select>
-
         {/* Tabla de Cuentas */}
         <TableContainer component={Paper}>
         <Table>
             <TableHead>
             <TableRow>
-                <TableCell>Email</TableCell>
-                <TableCell>Alias</TableCell>
+                <TableCell>
+                <TableSortLabel
+                    active={sortBy === 'email'}
+                    direction={sortBy === 'email' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('email')}
+                >
+                    Email
+                </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                <TableSortLabel
+                    active={sortBy === 'alias'}
+                    direction={sortBy === 'alias' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('alias')}
+                >
+                    Alias
+                </TableSortLabel>
+                </TableCell>
                 <TableCell>ID Decodificador</TableCell>
                 <TableCell>Número de Tarjeta</TableCell>
                 <TableCell>Saldo</TableCell>
                 <TableCell>Fecha de Corte</TableCell>
-                <TableCell>Habitación</TableCell>
+                <TableCell>
+                <TableSortLabel
+                    active={sortBy === 'room_number'}
+                    direction={sortBy === 'room_number' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('room_number')}
+                >
+                    Habitación
+                </TableSortLabel>
+                </TableCell>
                 <TableCell>Acciones</TableCell>
             </TableRow>
             </TableHead>
             <TableBody>
-            {filteredAccounts.flatMap((acc) =>
+            {displayedAccounts.flatMap((acc) =>
                 acc.devices.map((device, index) => {
                 const expired = isExpired(device.cutoff_date); // Verificar si la fecha está vencida
                 return (
@@ -222,17 +269,14 @@ return (
                     <TableCell>{device.room_number}</TableCell>
                     <TableCell>
                         <div>
-                        
-                    {/* Ícono para editar el dispositivo */}
-                    <Tooltip title="Editar">
-                    <EditIcon
-                        onClick={() => openEditModal(acc.id, device, index)}
-                        style={{ cursor: 'pointer', marginLeft: '8px' }}
-                        color="primary"
-                    />
-                    </Tooltip>
-                        
-                    
+                        {/* Ícono para editar el dispositivo */}
+                        <Tooltip title="Editar">
+                            <EditIcon
+                            onClick={() => openEditModal(acc.id, device, index)}
+                            style={{ cursor: 'pointer', marginLeft: '8px' }}
+                            color="primary"
+                            />
+                        </Tooltip>
                         </div>
                     </TableCell>
                     </TableRow>
@@ -244,7 +288,6 @@ return (
         </TableContainer>
     </Paper>
     </Grid>
-
     {/* Modal para mostrar el resultado de la búsqueda */}
     <Dialog open={openSearchModal} onClose={closeSearchModal}>
     <DialogTitle>Resultado de la Búsqueda</DialogTitle>
@@ -285,7 +328,6 @@ return (
         </Button>
     </DialogActions>
     </Dialog>
-
     {/* Modal para editar un dispositivo */}
     <Dialog open={openModal} onClose={closeEditModal}>
     <DialogTitle>Editar Dispositivo</DialogTitle>
