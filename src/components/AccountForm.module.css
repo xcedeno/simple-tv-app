@@ -1,59 +1,84 @@
 /* src/components/AccountForm.module.css */
 
 .container {
-margin: 40px auto; /* Margen uniforme alrededor del contenedor */
-max-width: 600px; /* Ancho máximo del formulario */
-padding: 20px; /* Espaciado interno */
-border-radius: 12px; /* Bordes redondeados */
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombreado ligero */
-background-color: #ffffff; /* Fondo blanco */
+    margin: 40px auto;
+    /* Margen uniforme alrededor del contenedor */
+    max-width: 95%;
+    /* Ancho máximo del formulario */
+    padding: 20px;
+    /* Espaciado interno */
+    border-radius: 12px;
+    /* Bordes redondeados */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Sombreado ligero */
+    background-color: #ffffff;
+    /* Fondo blanco */
 }
 
 .title {
-text-align: center; /* Centrar el título */
-font-size: 24px; /* Tamaño de fuente más grande */
-margin-bottom: 20px; /* Espacio debajo del título */
-color: #333333; /* Color de texto oscuro */
+    text-align: center;
+    /* Centrar el título */
+    font-size: 24px;
+    /* Tamaño de fuente más grande */
+    margin-bottom: 20px;
+    /* Espacio debajo del título */
+    color: #333333;
+    /* Color de texto oscuro */
 }
 
 .formField {
-margin-bottom: 16px; /* Espaciado entre campos */
+    margin-bottom: 16px;
+    /* Espaciado entre campos */
 }
 
 .deviceSection {
-margin-top: 20px; /* Espaciado entre dispositivos */
-padding: 10px; /* Espaciado interno */
-border: 1px solid #dddddd; /* Borde claro */
-border-radius: 8px; /* Bordes redondeados */
+    margin-top: 20px;
+    /* Espaciado entre dispositivos */
+    padding: 10px;
+    /* Espaciado interno */
+    border: 1px solid #dddddd;
+    /* Borde claro */
+    border-radius: 8px;
+    /* Bordes redondeados */
 }
 
 .deviceTitle {
-font-size: 18px; /* Tamaño de fuente para el título del dispositivo */
-margin-bottom: 10px; /* Espacio debajo del título */
+    font-size: 18px;
+    /* Tamaño de fuente para el título del dispositivo */
+    margin-bottom: 10px;
+    /* Espacio debajo del título */
 }
 
 .buttonContainer {
-display: flex;
-justify-content: space-between; /* Separar botones */
-gap: 10px; /* Espacio entre botones */
-margin-top: 20px; /* Espacio arriba de los botones */
+    display: flex;
+    justify-content: space-between;
+    /* Separar botones */
+    gap: 10px;
+    /* Espacio entre botones */
+    margin-top: 20px;
+    /* Espacio arriba de los botones */
 }
 
 @media (max-width: 600px) {
-.container {
-    padding: 15px; /* Reducir relleno en pantallas pequeñas */
-    margin: 20px auto; /* Reducir margen en pantallas pequeñas */
-}
+    .container {
+        padding: 15px;
+        /* Reducir relleno en pantallas pequeñas */
+        margin: 20px auto;
+        /* Reducir margen en pantallas pequeñas */
+    }
 
-.title {
-    font-size: 20px; /* Reducir tamaño del título */
-}
+    .title {
+        font-size: 20px;
+        /* Reducir tamaño del título */
+    }
 
-.formField {
-    margin-bottom: 12px; /* Reducir espacio entre campos */
-}
+    .formField {
+        margin-bottom: 12px;
+        /* Reducir espacio entre campos */
+    }
 
-.deviceTitle {
-    font-size: 16px; /* Reducir tamaño del título del dispositivo */
-}
+    .deviceTitle {
+        font-size: 16px;
+        /* Reducir tamaño del título del dispositivo */
+    }
 }

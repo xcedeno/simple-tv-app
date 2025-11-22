@@ -1,4 +1,4 @@
-import React, { SyntheticEvent, useEffect, useState, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, SyntheticEvent } from 'react';
 import { supabase } from '../supabaseClient';
 import {
   Table,
@@ -7,26 +7,23 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Tooltip,
   Paper,
-  Typography,
-  Select,
-  MenuItem,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  Grid,
-  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Typography,
+  Box,
+  Select,
+  MenuItem,
   SelectChangeEvent,
+  Grid
 } from '@mui/material';
-import styles from './AccountList.module.css';
-import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 interface Device {
@@ -48,75 +45,44 @@ interface AccountListProps {
   refresh: boolean;
 }
 
-// Componente memoizado para las filas de dispositivos
-const DeviceRow = memo(({
-  device,
-  accountId,
-  index,
-  openEditModal
-}: {
-  device: Device;
-  accountId: string;
-  index: number;
-  openEditModal: (accountId: string, device: Device, index: number) => void
-}) => {
-  const isExpired = (cutoffDate: string): boolean => {
-    const today = new Date();
-    const cutoff = new Date(cutoffDate);
-    return cutoff < today;
-  };
-
-  return (
-    <TableRow className={isExpired(device.cutoff_date) ? styles.expiredRow : ''}>
-      <TableCell>{device.decoder_id}</TableCell>
-      <TableCell>{device.access_card_number}</TableCell>
-
-      <TableCell>{device.cutoff_date}</TableCell>
-      <TableCell>{device.room_number}</TableCell>
-      <TableCell>
-        <Tooltip title="Editar">
-          <EditIcon
-            onClick={() => openEditModal(accountId, device, index)}
-            style={{ cursor: 'pointer' }}
-            color="primary"
-          />
-        </Tooltip>
-      </TableCell>
-    </TableRow>
-  );
-});
-
 // Componente memoizado para la tabla de dispositivos
-const DeviceTable = memo(({
-  devices,
-  accountId,
-  openEditModal
-}: {
+const DeviceTable = memo(({ devices, accountId, openEditModal }: {
   devices: Device[];
   accountId: string;
-  openEditModal: (accountId: string, device: Device, index: number) => void
+  openEditModal: (accountId: string, device: Device, index: number) => void;
 }) => (
-  <TableContainer component={Paper}>
+  <TableContainer component={Paper} variant="outlined" style={{ marginTop: '10px' }}>
     <Table size="small">
       <TableHead>
         <TableRow>
-          <TableCell>ID Decodificador</TableCell>
-          <TableCell>Número de Tarjeta</TableCell>
-          {/*<TableCell>Saldo</TableCell>*/}
-          <TableCell>Fecha de Corte</TableCell>
-          <TableCell>Habitación</TableCell>
-          <TableCell>Acciones</TableCell>
+          <TableCell><strong>ID Decodificador</strong></TableCell>
+          <TableCell><strong>Tarjeta</strong></TableCell>
+          <TableCell><strong>Saldo</strong></TableCell>
+          <TableCell><strong>Fecha Corte</strong></TableCell>
+          <TableCell><strong>Habitación</strong></TableCell>
+          <TableCell><strong>Acciones</strong></TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {devices.map((device, index) => (
-          <DeviceRow
-            key={`${accountId}-${index}`}
-            device={device}
-            accountId={accountId}
-            index={index}
-            openEditModal={openEditModal}
-          />
+          <TableRow key={`${device.decoder_id}-${index}`}>
+            <TableCell>{device.decoder_id}</TableCell>
+            <TableCell>{device.access_card_number}</TableCell>
+            <TableCell>${device.balance}</TableCell>
+            <TableCell style={{ color: new Date(device.cutoff_date) < new Date() ? 'red' : 'inherit' }}>
+              {device.cutoff_date}
+            </TableCell>
+            <TableCell>{device.room_number}</TableCell>
+            <TableCell>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => openEditModal(accountId, device, index)}
+              >
+                Editar
+              </Button>
+            </TableCell>
+          </TableRow>
         ))}
       </TableBody>
     </Table>
@@ -312,45 +278,51 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
 
   return (
     <Grid container spacing={3}>
-      <Grid>
+      <Grid size={{ xs: 12 }}>
         <Paper style={{ padding: '16px' }}>
           <Typography variant="h5" style={{ marginBottom: '16px' }}>
             Lista de Cuentas
           </Typography>
 
-          <Grid>
-            <TextField
-              fullWidth
-              label="Buscar por Número de Tarjeta"
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              margin="normal"
-            />
-            <Button
-              fullWidth
-              variant="contained"
-              color="primary"
-              onClick={handleSearch}
-              style={{ marginBottom: '20px' }}
-            >
-              Buscar
-            </Button>
+          <Grid container spacing={2} alignItems="center" style={{ marginBottom: '20px' }}>
+            <Grid size={{ xs: 12, md: 5 }}>
+              <TextField
+                fullWidth
+                label="Buscar por Número de Tarjeta"
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 2 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                color="primary"
+                onClick={handleSearch}
+                size="medium"
+                style={{ height: '40px' }}
+              >
+                Buscar
+              </Button>
+            </Grid>
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Select
+                value={selectedEmail}
+                onChange={handleEmailSelectChange}
+                displayEmpty
+                fullWidth
+                size="small"
+              >
+                <MenuItem value="">Todos los correos</MenuItem>
+                {Array.from(new Set(accounts.map(acc => acc.email))).map((email) => (
+                  <MenuItem key={email} value={email}>
+                    {email}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Grid>
           </Grid>
-
-          <Select
-            value={selectedEmail}
-            onChange={handleEmailSelectChange}
-            displayEmpty
-            fullWidth
-            style={{ marginBottom: '16px' }}
-          >
-            <MenuItem value="">Todos los correos</MenuItem>
-            {Array.from(new Set(accounts.map(acc => acc.email))).map((email) => (
-              <MenuItem key={email} value={email}>
-                {email}
-              </MenuItem>
-            ))}
-          </Select>
 
           {/* Lista de acordeones optimizada con scroll */}
           <Box sx={{ maxHeight: '70vh', overflow: 'auto' }}>
