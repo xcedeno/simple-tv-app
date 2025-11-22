@@ -45,8 +45,8 @@ function App() {
               {/* Enlaces de Navegación */}
               <Box sx={{ display: 'flex', gap: 2 }}>
                 {[
-                  { label: 'Dashboard', to: '/dashboard' },
-                  { label: 'Formulario', to: '/' },
+                  { label: 'Dashboard', to: '/' },
+                  { label: 'Formulario', to: '/form' },
                   { label: 'Lista', to: '/list' },
                   { label: 'Tarjetas', to: '/cards' },
                 ].map((item) => (
@@ -80,14 +80,15 @@ function App() {
         <div style={{ flex: 1 }}>
           <Routes>
             {/* Dashboard */}
+            {/* Dashboard (Principal) */}
             <Route
-              path="/dashboard"
+              path="/"
               element={<Dashboard />}
             />
 
-            {/* Página Principal: Formulario de Cuentas */}
+            {/* Formulario de Cuentas */}
             <Route
-              path="/"
+              path="/form"
               element={<AccountForm onSaved={handleSaved} />}
             />
 

@@ -177,7 +177,7 @@ export const Dashboard: React.FC = () => {
 
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card elevation={3}>
-                        <CardActionArea component={Link} to="/">
+                        <CardActionArea component={Link} to="/form">
                             <CardContent sx={{ textAlign: 'center', py: 4 }}>
                                 <AddCircleOutlineIcon sx={{ fontSize: 60, color: theme.palette.primary.main, mb: 2 }} />
                                 <Typography variant="h6">Nueva Cuenta</Typography>
