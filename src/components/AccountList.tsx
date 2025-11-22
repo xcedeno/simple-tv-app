@@ -49,14 +49,14 @@ interface AccountListProps {
 }
 
 // Componente memoizado para las filas de dispositivos
-const DeviceRow = memo(({ 
-  device, 
-  accountId, 
+const DeviceRow = memo(({
+  device,
+  accountId,
   index,
   openEditModal
-}: { 
-  device: Device; 
-  accountId: string; 
+}: {
+  device: Device;
+  accountId: string;
   index: number;
   openEditModal: (accountId: string, device: Device, index: number) => void
 }) => {
@@ -70,7 +70,7 @@ const DeviceRow = memo(({
     <TableRow className={isExpired(device.cutoff_date) ? styles.expiredRow : ''}>
       <TableCell>{device.decoder_id}</TableCell>
       <TableCell>{device.access_card_number}</TableCell>
-      <TableCell>{device.balance}</TableCell>
+
       <TableCell>{device.cutoff_date}</TableCell>
       <TableCell>{device.room_number}</TableCell>
       <TableCell>
@@ -87,12 +87,12 @@ const DeviceRow = memo(({
 });
 
 // Componente memoizado para la tabla de dispositivos
-const DeviceTable = memo(({ 
-  devices, 
+const DeviceTable = memo(({
+  devices,
   accountId,
   openEditModal
-}: { 
-  devices: Device[]; 
+}: {
+  devices: Device[];
   accountId: string;
   openEditModal: (accountId: string, device: Device, index: number) => void
 }) => (
@@ -102,7 +102,7 @@ const DeviceTable = memo(({
         <TableRow>
           <TableCell>ID Decodificador</TableCell>
           <TableCell>Número de Tarjeta</TableCell>
-          <TableCell>Saldo</TableCell>
+          {/*<TableCell>Saldo</TableCell>*/}
           <TableCell>Fecha de Corte</TableCell>
           <TableCell>Habitación</TableCell>
           <TableCell>Acciones</TableCell>
@@ -110,10 +110,10 @@ const DeviceTable = memo(({
       </TableHead>
       <TableBody>
         {devices.map((device, index) => (
-          <DeviceRow 
-            key={`${accountId}-${index}`} 
-            device={device} 
-            accountId={accountId} 
+          <DeviceRow
+            key={`${accountId}-${index}`}
+            device={device}
+            accountId={accountId}
             index={index}
             openEditModal={openEditModal}
           />
@@ -124,18 +124,18 @@ const DeviceTable = memo(({
 ));
 
 // Componente memoizado para cada acordeón
-const AccountAccordion = memo(({ 
+const AccountAccordion = memo(({
   account,
   expandedAccounts,
   handleAccordionChange,
   openEditModal
-}: { 
+}: {
   account: Account;
   expandedAccounts: Set<string>;
   handleAccordionChange: (accountId: string) => (event: SyntheticEvent, isExpanded: boolean) => void;
   openEditModal: (accountId: string, device: Device, index: number) => void;
 }) => (
-  <Accordion 
+  <Accordion
     expanded={expandedAccounts.has(account.id)}
     onChange={handleAccordionChange(account.id)}
   >
@@ -148,8 +148,8 @@ const AccountAccordion = memo(({
       </Box>
     </AccordionSummary>
     <AccordionDetails>
-      <DeviceTable 
-        devices={account.devices} 
+      <DeviceTable
+        devices={account.devices}
         accountId={account.id}
         openEditModal={openEditModal}
       />
@@ -184,7 +184,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
   }, [refresh, fetchAccounts]);
 
   // Handlers optimizados con useCallback
-  const handleAccordionChange = useCallback((accountId: string) => 
+  const handleAccordionChange = useCallback((accountId: string) =>
     (_event: SyntheticEvent, isExpanded: boolean) => {
       setExpandedAccounts(prev => {
         const newSet = new Set(prev);
@@ -200,7 +200,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
   const handleEmailSelectChange = useCallback((e: SelectChangeEvent<string>) => {
     const email = e.target.value;
     setSelectedEmail(email);
-    
+
     if (email) {
       const account = accounts.find(acc => acc.email === email);
       if (account) {
@@ -227,28 +227,60 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
     if (!editingDevice || !editingAccountId || editingDeviceIndex === null) return;
     const account = accounts.find((acc) => acc.id === editingAccountId);
     if (!account) return;
-    
-    const updatedDevices = [...account.devices];
-    updatedDevices[editingDeviceIndex] = editingDevice;
-    
-    const { error } = await supabase.from('accounts')
-      .update({ devices: updatedDevices })
-      .eq('id', editingAccountId);
-    
-    if (error) {
-      console.error('Error updating device:', error);
-      return;
+
+    // Sincronizar fecha de corte con otras cuentas del mismo email
+    const currentAccount = accounts.find(acc => acc.id === editingAccountId);
+    if (currentAccount && editingDevice) {
+      const newCutoffDate = editingDevice.cutoff_date;
+
+      // Encontrar todas las cuentas con el mismo email
+      const sameEmailAccounts = accounts.filter(acc => acc.email === currentAccount.email);
+
+      // Actualizar estado local y base de datos para todas las cuentas afectadas
+      const updates = sameEmailAccounts.map(async (acc) => {
+        const updatedAccDevices = acc.devices.map(d => ({
+          ...d,
+          cutoff_date: newCutoffDate
+        }));
+
+        // Actualizar DB
+        await supabase
+          .from('accounts')
+          .update({ devices: updatedAccDevices })
+          .eq('id', acc.id);
+
+        return { ...acc, devices: updatedAccDevices };
+      });
+
+      await Promise.all(updates);
+
+      // Actualizar el estado local globalmente
+      const updatedAccountsList = accounts.map(acc => {
+        if (acc.email === currentAccount.email) {
+          return {
+            ...acc,
+            devices: acc.devices.map(d => ({
+              ...d,
+              cutoff_date: newCutoffDate
+            }))
+          };
+        }
+        return acc;
+      });
+
+      setAccounts(updatedAccountsList);
+    } else {
+      fetchAccounts();
     }
-    
+
     closeEditModal();
-    fetchAccounts();
   }, [editingDevice, editingAccountId, editingDeviceIndex, accounts, fetchAccounts, closeEditModal]);
 
   const handleSearch = useCallback(() => {
     const foundAccount = accounts.find(acc =>
       acc.devices.some(device => device.access_card_number === searchTerm)
     );
-    
+
     if (foundAccount) {
       const foundDevice = foundAccount.devices.find(
         device => device.access_card_number === searchTerm
@@ -285,7 +317,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
           <Typography variant="h5" style={{ marginBottom: '16px' }}>
             Lista de Cuentas
           </Typography>
-          
+
           <Grid>
             <TextField
               fullWidth
@@ -323,7 +355,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
           {/* Lista de acordeones optimizada con scroll */}
           <Box sx={{ maxHeight: '70vh', overflow: 'auto' }}>
             {sortedAccounts(accounts).map((account) => (
-              <AccountAccordion 
+              <AccountAccordion
                 key={account.id}
                 account={account}
                 expandedAccounts={expandedAccounts}
@@ -424,42 +456,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 ...prev!,
                 cutoff_date: newCutoffDate,
               }));
-
-              const currentAccount = accounts.find(acc => acc.id === editingAccountId);
-              if (!currentAccount) return;
-
-              const sameEmailAccounts = accounts.filter(
-                acc => acc.email === currentAccount.email && acc.id !== currentAccount.id
-              );
-
-              if (sameEmailAccounts.length > 0) {
-                const updatedAccounts = accounts.map(acc => {
-                  if (acc.email === currentAccount.email) {
-                    return {
-                      ...acc,
-                      devices: acc.devices.map(device => ({
-                        ...device,
-                        cutoff_date: newCutoffDate,
-                      })),
-                    };
-                  }
-                  return acc;
-                });
-
-                setAccounts(updatedAccounts);
-
-                sameEmailAccounts.forEach(async (acc) => {
-                  await supabase
-                    .from('accounts')
-                    .update({ 
-                      devices: acc.devices.map(d => ({
-                        ...d,
-                        cutoff_date: newCutoffDate,
-                      })) 
-                    })
-                    .eq('id', acc.id);
-                });
-              }
             }}
             fullWidth
             margin="normal"
