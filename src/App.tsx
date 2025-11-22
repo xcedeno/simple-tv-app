@@ -11,6 +11,8 @@ import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { AccountForm } from './components/AccountForm';
 import { AccountList } from './components/AccountList';
 import { AccountCardsScreen } from './components/AccountCardsScreen';
+import { Dashboard } from './components/Dashboard';
+import { Reports } from './components/Reports';
 
 function App() {
   const [refresh, setRefresh] = React.useState(false);
@@ -23,36 +25,70 @@ function App() {
   return (
     <Router>
       {/* Contenedor Principal */}
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
         {/* Barra de Navegación (Header) */}
-        <AppBar position="static" color="primary" sx={{ width: '100%' }}>
-          <Toolbar>
-            {/* Título del Encabezado */}
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Gestor de Cuentas
-            </Typography>
+        <Box sx={{ p: 2 }}>
+          <AppBar
+            position="static"
+            sx={{
+              borderRadius: '16px',
+              background: 'linear-gradient(90deg, #1a237e 0%, #283593 50%, #0d47a1 100%)',
+              boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
+            }}
+          >
+            <Toolbar>
+              {/* Título del Encabezado */}
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold', letterSpacing: '1px' }}>
+                Gestor de Cuentas
+              </Typography>
 
-            {/* Enlaces de Navegación */}
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button color="inherit" component={Link} to="/">
-                Formulario de Cuentas
-              </Button>
-              <Button color="inherit" component={Link} to="/list">
-                Lista de Cuentas
-              </Button>
-              <Button color="inherit" component={Link} to="/cards">
-                Tarjetas de Cuentas
-              </Button>
-            </Box>
-          </Toolbar>
-        </AppBar>
+              {/* Enlaces de Navegación */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {[
+                  { label: 'Dashboard', to: '/' },
+                  { label: 'Formulario', to: '/form' },
+                  { label: 'Lista', to: '/list' },
+                  { label: 'Tarjetas', to: '/cards' },
+                ].map((item) => (
+                  <Button
+                    key={item.to}
+                    color="inherit"
+                    component={Link}
+                    to={item.to}
+                    sx={{
+                      borderRadius: '20px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 3,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                      },
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </Box>
+            </Toolbar>
+          </AppBar>
+        </Box>
 
         {/* Rutas */}
         <div style={{ flex: 1 }}>
           <Routes>
-            {/* Página Principal: Formulario de Cuentas */}
+            {/* Dashboard */}
+            {/* Dashboard (Principal) */}
             <Route
               path="/"
+              element={<Dashboard />}
+            />
+
+            {/* Formulario de Cuentas */}
+            <Route
+              path="/form"
               element={<AccountForm onSaved={handleSaved} />}
             />
 
@@ -66,6 +102,12 @@ function App() {
             <Route
               path="/cards"
               element={<AccountCardsScreen />}
+            />
+
+            {/* Página de Reportes */}
+            <Route
+              path="/reports"
+              element={<Reports />}
             />
           </Routes>
         </div>
