@@ -219,7 +219,7 @@ export const Dashboard: React.FC = () => {
 
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card elevation={3}>
-                        <CardActionArea component={Link} to="/dashboard">
+                        <CardActionArea component={Link} to="/reports">
                             <CardContent sx={{ textAlign: 'center', py: 4 }}>
                                 <AssessmentIcon sx={{ fontSize: 60, color: '#9c27b0', mb: 2 }} />
                                 <Typography variant="h6">Reportes</Typography>

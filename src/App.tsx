@@ -12,6 +12,7 @@ import { AccountForm } from './components/AccountForm';
 import { AccountList } from './components/AccountList';
 import { AccountCardsScreen } from './components/AccountCardsScreen';
 import { Dashboard } from './components/Dashboard';
+import { Reports } from './components/Reports';
 
 function App() {
   const [refresh, setRefresh] = React.useState(false);
@@ -100,6 +101,12 @@ function App() {
             <Route
               path="/cards"
               element={<AccountCardsScreen />}
+            />
+
+            {/* Página de Reportes */}
+            <Route
+              path="/reports"
+              element={<Reports />}
             />
           </Routes>
         </div>
