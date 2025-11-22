@@ -292,6 +292,18 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: '#f5f5f5',
+                    '&:hover fieldset': {
+                      borderColor: '#3f51b5',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#3f51b5',
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 2 }}>
@@ -301,7 +313,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 color="primary"
                 onClick={handleSearch}
                 size="medium"
-                style={{ height: '40px' }}
+                style={{ height: '40px', borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
               >
                 Buscar
               </Button>
@@ -313,8 +325,28 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 displayEmpty
                 fullWidth
                 size="small"
+                sx={{
+                  borderRadius: '12px',
+                  backgroundColor: '#f5f5f5',
+                  '&:hover': {
+                    backgroundColor: '#e0e0e0',
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e0e0e0',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#3f51b5',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#3f51b5',
+                  },
+                }}
               >
-                <MenuItem value="">Todos los correos</MenuItem>
+                <MenuItem value="">
+                  <Typography sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                    Todos los correos
+                  </Typography>
+                </MenuItem>
                 {Array.from(new Set(accounts.map(acc => acc.email))).map((email) => (
                   <MenuItem key={email} value={email}>
                     {email}
