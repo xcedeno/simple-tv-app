@@ -88,6 +88,7 @@ export const AccountCardsScreen = () => {
                             {/* Componente de Tarjeta */}
                             <AccountCard
                                 alias={account.alias}
+                                email={account.email}
                                 nearestCutoffDate={nearestCutoffDate || ''}
                                 roomNumbers={account.devices.map(device => device.room_number)}
                             />

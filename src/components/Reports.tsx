@@ -18,8 +18,11 @@ import {
     AttachMoney,
     Warning,
     CheckCircle,
-    Room
+    Room,
+    WhatsApp,
+    Email
 } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
 import dayjs from 'dayjs';
 
 interface Device {
@@ -43,7 +46,7 @@ export const Reports: React.FC = () => {
         avgBalance: 0,
         activeDevices: 0,
         expiredDevices: 0,
-        expiringSoon: [] as { alias: string; decoder: string; date: string; daysLeft: number }[],
+        expiringSoon: [] as { alias: string; email: string; decoder: string; date: string; daysLeft: number }[],
         devicesByRoom: {} as Record<string, number>
     });
 
@@ -100,6 +103,7 @@ export const Reports: React.FC = () => {
                     if (daysDiff >= 0 && daysDiff <= 30) {
                         expiring.push({
                             alias: acc.alias || acc.email,
+                            email: acc.email,
                             decoder: dev.decoder_id,
                             date: dev.cutoff_date,
                             daysLeft: daysDiff
@@ -229,28 +233,58 @@ export const Reports: React.FC = () => {
                                         <TableCell>Decodificador</TableCell>
                                         <TableCell>Fecha Corte</TableCell>
                                         <TableCell>Estado</TableCell>
+                                        <TableCell>Notificar</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {stats.expiringSoon.length > 0 ? (
-                                        stats.expiringSoon.map((item, index) => (
-                                            <TableRow key={index} hover>
-                                                <TableCell sx={{ fontWeight: 500 }}>{item.alias}</TableCell>
-                                                <TableCell>{item.decoder}</TableCell>
-                                                <TableCell>{dayjs(item.date).format('DD/MM/YYYY')}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={item.daysLeft === 0 ? 'Vence Hoy' : `${item.daysLeft} días`}
-                                                        color={item.daysLeft <= 7 ? 'error' : 'warning'}
-                                                        size="small"
-                                                        sx={{ fontWeight: 'bold' }}
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
+                                        stats.expiringSoon.map((item, index) => {
+                                            const handleWhatsApp = () => {
+                                                const message = `Hola ${item.alias}, te recordamos que tu cuenta con decodificador ${item.decoder} vence el ${dayjs(item.date).format('DD/MM/YYYY')} (${item.daysLeft} días restantes). Por favor realiza tu pago para evitar cortes.`;
+                                                const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                                                window.open(url, '_blank');
+                                            };
+
+                                            const handleEmail = () => {
+                                                const subject = `Recordatorio de Vencimiento - Decodificador ${item.decoder}`;
+                                                const body = `Hola ${item.alias},\n\nTe recordamos que tu cuenta con decodificador ${item.decoder} vence el ${dayjs(item.date).format('DD/MM/YYYY')} (${item.daysLeft} días restantes).\n\nPor favor realiza tu pago para evitar cortes.\n\nSaludos.`;
+                                                const url = `mailto:${item.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                                                window.location.href = url;
+                                            };
+
+                                            return (
+                                                <TableRow key={index} hover>
+                                                    <TableCell sx={{ fontWeight: 500 }}>{item.alias}</TableCell>
+                                                    <TableCell>{item.decoder}</TableCell>
+                                                    <TableCell>{dayjs(item.date).format('DD/MM/YYYY')}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={item.daysLeft === 0 ? 'Vence Hoy' : `${item.daysLeft} días`}
+                                                            color={item.daysLeft <= 7 ? 'error' : 'warning'}
+                                                            size="small"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box display="flex" gap={1}>
+                                                            <Tooltip title="Enviar WhatsApp">
+                                                                <IconButton size="small" color="success" onClick={handleWhatsApp}>
+                                                                    <WhatsApp fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Enviar Correo">
+                                                                <IconButton size="small" color="primary" onClick={handleEmail}>
+                                                                    <Email fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} align="center">
+                                            <TableCell colSpan={5} align="center">
                                                 <Box py={3}>
                                                     <CheckCircle color="success" sx={{ fontSize: 40, mb: 1 }} />
                                                     <Typography>No hay vencimientos próximos</Typography>
