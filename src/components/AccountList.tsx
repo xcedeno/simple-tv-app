@@ -22,7 +22,12 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  Grid
+  Grid,
+  useTheme,
+  useMediaQuery,
+  Card,
+  CardContent,
+  Divider
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -45,51 +50,111 @@ interface AccountListProps {
   refresh: boolean;
 }
 
+// Función helper para verificar si una fecha ha expirado
+const isExpired = (cutoffDate: string): boolean => {
+  const today = new Date();
+  const cutoff = new Date(cutoffDate);
+  return cutoff < today;
+};
+
 // Componente memoizado para la tabla de dispositivos
 const DeviceTable = memo(({ devices, accountId, openEditModal }: {
   devices: Device[];
   accountId: string;
   openEditModal: (accountId: string, device: Device, index: number) => void;
-}) => (
-  <TableContainer component={Paper} variant="outlined" style={{ marginTop: '10px' }}>
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell><strong>ID Decodificador</strong></TableCell>
-          <TableCell><strong>Tarjeta</strong></TableCell>
-          <TableCell><strong>Saldo</strong></TableCell>
-          <TableCell><strong>Fecha Corte</strong></TableCell>
-          <TableCell><strong>Habitación</strong></TableCell>
-          <TableCell><strong>Acciones</strong></TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {devices.map((device, index) => (
-          <TableRow key={`${device.decoder_id}-${index}`}>
-            <TableCell>{device.decoder_id}</TableCell>
-            <TableCell>{device.access_card_number}</TableCell>
-            <TableCell>${device.balance}</TableCell>
-            <TableCell style={{ color: new Date(device.cutoff_date) < new Date() ? 'red' : 'inherit' }}>
-              {device.cutoff_date}
-            </TableCell>
-            <TableCell>{device.room_number}</TableCell>
-            <TableCell>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => openEditModal(accountId, device, index)}
-              >
-                Editar
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </TableContainer>
-));
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-// Componente memoizado para cada acordeón
+  if (isMobile) {
+    return (
+      <Box sx={{ mt: 1 }}>
+        {devices.map((device, index) => (
+          <Card key={`${device.decoder_id}-${index}`} variant="outlined" sx={{ mb: 2, borderRadius: '12px' }}>
+            <CardContent>
+              <Grid container spacing={1}>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="subtitle2" color="textSecondary">ID Decodificador</Typography>
+                  <Typography variant="body1" fontWeight="bold">{device.decoder_id}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Divider />
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Typography variant="subtitle2" color="textSecondary">Tarjeta</Typography>
+                  <Typography variant="body2">{device.access_card_number}</Typography>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Typography variant="subtitle2" color="textSecondary">Saldo</Typography>
+                  <Typography variant="body2">${device.balance}</Typography>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Typography variant="subtitle2" color="textSecondary">Fecha Corte</Typography>
+                  <Typography variant="body2" style={{ color: isExpired(device.cutoff_date) ? 'red' : 'inherit' }}>
+                    {device.cutoff_date}
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Typography variant="subtitle2" color="textSecondary">Habitación</Typography>
+                  <Typography variant="body2">{device.room_number}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12 }} sx={{ mt: 1 }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => openEditModal(accountId, device, index)}
+                  >
+                    Editar
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    );
+  }
+
+  return (
+    <TableContainer component={Paper} variant="outlined" style={{ marginTop: '10px' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell><strong>ID Decodificador</strong></TableCell>
+            <TableCell><strong>Tarjeta</strong></TableCell>
+            <TableCell><strong>Saldo</strong></TableCell>
+            <TableCell><strong>Fecha Corte</strong></TableCell>
+            <TableCell><strong>Habitación</strong></TableCell>
+            <TableCell><strong>Acciones</strong></TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {devices.map((device, index) => (
+            <TableRow key={`${device.decoder_id}-${index}`}>
+              <TableCell>{device.decoder_id}</TableCell>
+              <TableCell>{device.access_card_number}</TableCell>
+              <TableCell>${device.balance}</TableCell>
+              <TableCell style={{ color: isExpired(device.cutoff_date) ? 'red' : 'inherit' }}>
+                {device.cutoff_date}
+              </TableCell>
+              <TableCell>{device.room_number}</TableCell>
+              <TableCell>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => openEditModal(accountId, device, index)}
+                >
+                  Editar
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+});
+
 const AccountAccordion = memo(({
   account,
   expandedAccounts,
@@ -100,30 +165,50 @@ const AccountAccordion = memo(({
   expandedAccounts: Set<string>;
   handleAccordionChange: (accountId: string) => (event: SyntheticEvent, isExpanded: boolean) => void;
   openEditModal: (accountId: string, device: Device, index: number) => void;
-}) => (
-  <Accordion
-    expanded={expandedAccounts.has(account.id)}
-    onChange={handleAccordionChange(account.id)}
-  >
-    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-      <Box display="flex" justifyContent="space-between" width="100%">
-        <Typography noWrap>{account.email}</Typography>
-        <Typography noWrap color="textSecondary" sx={{ ml: 2 }}>
-          {account.alias}
-        </Typography>
-      </Box>
-    </AccordionSummary>
-    <AccordionDetails>
-      <DeviceTable
-        devices={account.devices}
-        accountId={account.id}
-        openEditModal={openEditModal}
-      />
-    </AccordionDetails>
-  </Accordion>
-));
+}) => {
+  return (
+    <Accordion
+      expanded={expandedAccounts.has(account.id)}
+      onChange={handleAccordionChange(account.id)}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+          <Typography
+            noWrap
+            sx={{
+              fontWeight: 'bold',
+              fontSize: { xs: '0.75rem', sm: '1rem' },
+              maxWidth: { xs: '60%', sm: 'auto' }
+            }}
+          >
+            {account.email}
+          </Typography>
+          <Typography
+            noWrap
+            color="textSecondary"
+            sx={{
+              ml: 1,
+              fontSize: { xs: '0.75rem', sm: '1rem' },
+              maxWidth: { xs: '35%', sm: 'auto' },
+              textAlign: 'right'
+            }}
+          >
+            {account.alias}
+          </Typography>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails>
+        <DeviceTable
+          devices={account.devices}
+          accountId={account.id}
+          openEditModal={openEditModal}
+        />
+      </AccordionDetails>
+    </Accordion>
+  );
+});
 
-export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
+const AccountList = ({ refresh }: AccountListProps) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<string>('');
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
@@ -265,12 +350,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
     setOpenSearchModal(false);
   }, []);
 
-  const isExpired = useCallback((cutoffDate: string): boolean => {
-    const today = new Date();
-    const cutoff = new Date(cutoffDate);
-    return cutoff < today;
-  }, []);
-
   // Ordenar cuentas por email
   const sortedAccounts = useCallback((accountsToSort: Account[]): Account[] => {
     return [...accountsToSort].sort((a, b) => a.email.localeCompare(b.email));
@@ -291,19 +370,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 label="Buscar por Número de Tarjeta"
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                size="small"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: '#f5f5f5',
-                    '&:hover fieldset': {
-                      borderColor: '#3f51b5',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3f51b5',
-                    },
-                  },
-                }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 2 }}>
@@ -312,52 +378,37 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 variant="contained"
                 color="primary"
                 onClick={handleSearch}
-                size="medium"
-                style={{ height: '40px', borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
+                disabled={!searchTerm}
               >
                 Buscar
               </Button>
             </Grid>
             <Grid size={{ xs: 12, md: 5 }}>
               <Select
+                fullWidth
+                displayEmpty
                 value={selectedEmail}
                 onChange={handleEmailSelectChange}
-                displayEmpty
-                fullWidth
-                size="small"
-                sx={{
-                  borderRadius: '12px',
-                  backgroundColor: '#f5f5f5',
-                  '&:hover': {
-                    backgroundColor: '#e0e0e0',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3f51b5',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3f51b5',
-                  },
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return <em>Buscar por Correo</em>;
+                  }
+                  return selected;
                 }}
               >
-                <MenuItem value="">
-                  <Typography sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                    Todos los correos
-                  </Typography>
+                <MenuItem disabled value="">
+                  <em>Seleccione un correo</em>
                 </MenuItem>
-                {Array.from(new Set(accounts.map(acc => acc.email))).map((email) => (
-                  <MenuItem key={email} value={email}>
-                    {email}
+                {sortedAccounts(accounts).map((account) => (
+                  <MenuItem key={account.id} value={account.email}>
+                    {account.email}
                   </MenuItem>
                 ))}
               </Select>
             </Grid>
           </Grid>
 
-          {/* Lista de acordeones optimizada con scroll */}
-          <Box sx={{ maxHeight: '70vh', overflow: 'auto' }}>
+          <Box>
             {sortedAccounts(accounts).map((account) => (
               <AccountAccordion
                 key={account.id}
@@ -371,133 +422,88 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
         </Paper>
       </Grid>
 
-      {/* Modal de búsqueda */}
-      <Dialog open={openSearchModal} onClose={closeSearchModal}>
-        <DialogTitle>Resultado de la Búsqueda</DialogTitle>
-        <DialogContent>
-          {searchResult ? (
-            <div>
-              <Typography variant="body1">
-                <strong>Alias:</strong> {searchResult.alias}
-              </Typography>
-              <Typography variant="body1">
-                <strong>ID Decodificador:</strong> {searchResult.device.decoder_id}
-              </Typography>
-              <Typography variant="body1">
-                <strong>Número de Tarjeta:</strong> {searchResult.device.access_card_number}
-              </Typography>
-              <Typography variant="body1">
-                <strong>Saldo:</strong> {searchResult.device.balance}
-              </Typography>
-              <Typography variant="body1" style={{ color: isExpired(searchResult.device.cutoff_date) ? '#c62828' : 'inherit' }}>
-                <strong>Fecha de Corte:</strong> {searchResult.device.cutoff_date}
-              </Typography>
-              <Typography variant="body1">
-                <strong>Habitación:</strong> {searchResult.device.room_number}
-              </Typography>
-              {isExpired(searchResult.device.cutoff_date) && (
-                <Typography variant="body2" style={{ color: '#c62828', fontWeight: 'bold' }}>
-                  ¡La fecha de corte está vencida!
-                </Typography>
-              )}
-            </div>
-          ) : (
-            <Typography variant="body1">No se encontraron resultados.</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeSearchModal} color="secondary">
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal de edición */}
+      {/* Modal de Edición */}
       <Dialog open={openModal} onClose={closeEditModal}>
         <DialogTitle>Editar Dispositivo</DialogTitle>
         <DialogContent>
-          <TextField
-            label="ID Decodificador"
-            value={editingDevice?.decoder_id || ''}
-            onChange={(e) =>
-              setEditingDevice((prev) => ({ ...prev!, decoder_id: e.target.value }))
-            }
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Número de Tarjeta de Acceso"
-            value={editingDevice?.access_card_number || ''}
-            onChange={(e) =>
-              setEditingDevice((prev) => ({
-                ...prev!,
-                access_card_number: e.target.value,
-              }))
-            }
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Saldo"
-            type="number"
-            value={editingDevice?.balance || 0}
-            onChange={(e) =>
-              setEditingDevice((prev) => ({
-                ...prev!,
-                balance: Number(e.target.value),
-              }))
-            }
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Fecha de Corte"
-            type="date"
-            value={editingDevice?.cutoff_date || ''}
-            onChange={(e) => {
-              const newCutoffDate = e.target.value;
-              setEditingDevice((prev) => ({
-                ...prev!,
-                cutoff_date: newCutoffDate,
-              }));
-            }}
-            fullWidth
-            margin="normal"
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
-            Al cambiar esta fecha, también se aplicará a otros dispositivos asociados al correo{' '}
-            <strong>{accounts.find(acc => acc.id === editingAccountId)?.email}</strong>.
-          </Typography>
-          {editingDevice && isExpired(editingDevice.cutoff_date) && (
-            <Typography variant="body2" style={{ color: '#c62828', fontWeight: 'bold' }}>
-              ¡La fecha de corte está vencida!
-            </Typography>
+          {editingDevice && (
+            <>
+              <TextField
+                margin="dense"
+                label="ID Decodificador"
+                fullWidth
+                value={editingDevice.decoder_id}
+                onChange={(e) => setEditingDevice({ ...editingDevice, decoder_id: e.target.value })}
+              />
+              <TextField
+                margin="dense"
+                label="Tarjeta de Acceso"
+                fullWidth
+                value={editingDevice.access_card_number}
+                onChange={(e) => setEditingDevice({ ...editingDevice, access_card_number: e.target.value })}
+              />
+              <TextField
+                margin="dense"
+                label="Saldo"
+                type="number"
+                fullWidth
+                value={editingDevice.balance}
+                onChange={(e) => setEditingDevice({ ...editingDevice, balance: parseFloat(e.target.value) })}
+              />
+              <TextField
+                margin="dense"
+                label="Fecha de Corte"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={editingDevice.cutoff_date}
+                onChange={(e) => setEditingDevice({ ...editingDevice, cutoff_date: e.target.value })}
+              />
+              <TextField
+                margin="dense"
+                label="Habitación"
+                fullWidth
+                value={editingDevice.room_number}
+                onChange={(e) => setEditingDevice({ ...editingDevice, room_number: e.target.value })}
+              />
+            </>
           )}
-          <TextField
-            label="Número de Habitación"
-            value={editingDevice?.room_number || ''}
-            onChange={(e) =>
-              setEditingDevice((prev) => ({
-                ...prev!,
-                room_number: e.target.value,
-              }))
-            }
-            fullWidth
-            margin="normal"
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={closeEditModal} color="secondary">
             Cancelar
           </Button>
           <Button onClick={handleSaveDevice} color="primary">
-            Guardar Cambios
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Búsqueda */}
+      <Dialog open={openSearchModal} onClose={closeSearchModal}>
+        <DialogTitle>Resultado de Búsqueda</DialogTitle>
+        <DialogContent>
+          {searchResult && (
+            <Box>
+              <Typography variant="subtitle1"><strong>Alias:</strong> {searchResult.alias}</Typography>
+              <Typography variant="subtitle1"><strong>ID Decodificador:</strong> {searchResult.device.decoder_id}</Typography>
+              <Typography variant="subtitle1"><strong>Tarjeta:</strong> {searchResult.device.access_card_number}</Typography>
+              <Typography variant="subtitle1"><strong>Saldo:</strong> ${searchResult.device.balance}</Typography>
+              <Typography variant="subtitle1" style={{ color: isExpired(searchResult.device.cutoff_date) ? 'red' : 'inherit' }}>
+                <strong>Fecha Corte:</strong> {searchResult.device.cutoff_date}
+              </Typography>
+              <Typography variant="subtitle1"><strong>Habitación:</strong> {searchResult.device.room_number}</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeSearchModal} color="primary">
+            Cerrar
           </Button>
         </DialogActions>
       </Dialog>
     </Grid>
   );
 };
+
+export default AccountList;
