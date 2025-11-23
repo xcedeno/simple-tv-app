@@ -1,20 +1,23 @@
 // src/components/AccountCard.tsx
 
 import React from 'react';
-import { Card, CardContent, Typography, Box, Chip, Divider } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Divider, IconButton, Tooltip } from '@mui/material';
 import dayjs from 'dayjs';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import EmailIcon from '@mui/icons-material/Email';
 
 // Interfaz para los datos de la tarjeta
 interface AccountCardProps {
     alias: string;
+    email: string;
     nearestCutoffDate: string; // Fecha de corte más próxima en formato ISO (YYYY-MM-DD)
     roomNumbers: string[]; // Lista de números de habitación asociados al alias
 }
 
-export const AccountCard: React.FC<AccountCardProps> = ({ alias, nearestCutoffDate, roomNumbers }) => {
+export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestCutoffDate, roomNumbers }) => {
     // Función para calcular los días restantes
     const getDaysRemaining = (cutoffDate: string): number => {
         const today = dayjs();
@@ -33,6 +36,19 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, nearestCutoffDa
     };
 
     const status = getStatusInfo(daysRemaining);
+
+    const handleWhatsApp = () => {
+        const message = `Hola ${alias}, te recordamos que tu cuenta vence el ${dayjs(nearestCutoffDate).format('DD/MM/YYYY')} (${daysRemaining} días restantes). Por favor realiza tu pago.`;
+        const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    };
+
+    const handleEmail = () => {
+        const subject = `Recordatorio de Vencimiento - Cuenta ${alias}`;
+        const body = `Hola ${alias},\n\nTe recordamos que tu cuenta vence el ${dayjs(nearestCutoffDate).format('DD/MM/YYYY')} (${daysRemaining} días restantes).\n\nPor favor realiza tu pago para evitar cortes.\n\nSaludos.`;
+        const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = url;
+    };
 
     return (
         <Card
@@ -126,25 +142,41 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, nearestCutoffDa
                     </Box>
                 </Box>
 
-                {/* Footer con Días Restantes */}
-                <Box
-                    sx={{
-                        backgroundColor: status.bgColor,
-                        borderRadius: '12px',
-                        p: 1.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <AccessTimeIcon sx={{ color: status.color, fontSize: 18, mr: 1 }} />
-                    <Typography variant="body2" sx={{ color: status.color, fontWeight: 600 }}>
-                        {daysRemaining < 0
-                            ? `Vencido hace ${Math.abs(daysRemaining)} días`
-                            : daysRemaining === 0
-                                ? 'Vence hoy'
-                                : `Vence en ${daysRemaining} días`}
-                    </Typography>
+                {/* Footer con Días Restantes y Botones */}
+                <Box display="flex" alignItems="center" justifyContent="space-between" mt={2}>
+                    <Box
+                        sx={{
+                            backgroundColor: status.bgColor,
+                            borderRadius: '12px',
+                            p: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexGrow: 1,
+                            mr: 2
+                        }}
+                    >
+                        <AccessTimeIcon sx={{ color: status.color, fontSize: 18, mr: 1 }} />
+                        <Typography variant="body2" sx={{ color: status.color, fontWeight: 600 }}>
+                            {daysRemaining < 0
+                                ? `Vencido hace ${Math.abs(daysRemaining)} días`
+                                : daysRemaining === 0
+                                    ? 'Vence hoy'
+                                    : `Vence en ${daysRemaining} días`}
+                        </Typography>
+                    </Box>
+                    <Box display="flex" gap={1}>
+                        <Tooltip title="Enviar WhatsApp">
+                            <IconButton size="small" onClick={handleWhatsApp} sx={{ color: '#25D366', backgroundColor: '#e8f5e9', '&:hover': { backgroundColor: '#c8e6c9' } }}>
+                                <WhatsAppIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Enviar Correo">
+                            <IconButton size="small" onClick={handleEmail} sx={{ color: '#1976d2', backgroundColor: '#e3f2fd', '&:hover': { backgroundColor: '#bbdefb' } }}>
+                                <EmailIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
             </CardContent>
         </Card>
