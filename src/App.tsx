@@ -12,6 +12,7 @@ import { AccountCardsScreen } from './components/AccountCardsScreen';
 import { Dashboard } from './components/Dashboard';
 import { Reports } from './components/Reports';
 import MiniDrawer from './components/MiniDrawer';
+import { FloatingNav } from './components/FloatingNav';
 
 function App() {
   const [refresh, setRefresh] = React.useState(false);
@@ -24,6 +25,7 @@ function App() {
   return (
     <Router>
       <MiniDrawer>
+        <FloatingNav />
         <Routes>
           {/* Dashboard */}
           {/* Dashboard (Principal) */}

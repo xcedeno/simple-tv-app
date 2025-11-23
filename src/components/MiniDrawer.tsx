@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
 import MuiDrawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
@@ -61,8 +62,8 @@ const DrawerHeader = styled('div')(({ theme }) => ({
     ...theme.mixins.toolbar,
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-    ({ theme, open }) => ({
+const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' && prop !== 'isMobile' })<{ open?: boolean; isMobile?: boolean }>(
+    ({ theme, open, isMobile }) => ({
         width: drawerWidth,
         flexShrink: 0,
         whiteSpace: 'nowrap',
@@ -71,18 +72,30 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
             ...openedMixin(theme),
             '& .MuiDrawer-paper': openedMixin(theme),
         }),
-        ...(!open && {
+        ...(!open && !isMobile && {
             ...closedMixin(theme),
             '& .MuiDrawer-paper': closedMixin(theme),
+        }),
+        ...(!open && isMobile && {
+            // On mobile, when closed, we don't want the closedMixin (mini strip). 
+            // We want it to be hidden (handled by variant="temporary"), so we avoid setting width.
+            // However, to be safe, we can set width to 0 or rely on MUI.
+            // MUI temporary drawer handles visibility via transform.
         }),
     }),
 );
 
 export default function MiniDrawer({ children }: { children: React.ReactNode }) {
     const theme = useTheme();
-    const [open, setOpen] = useState(false);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [open, setOpen] = useState(!isMobile); // Default open on desktop, closed on mobile
     const [openGestor, setOpenGestor] = useState(true);
     const location = useLocation();
+
+    // Update open state when screen size changes
+    React.useEffect(() => {
+        setOpen(!isMobile);
+    }, [isMobile]);
 
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -112,7 +125,24 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
-            <Drawer variant="permanent" open={open}>
+            <Drawer
+                variant={isMobile ? "temporary" : "permanent"}
+                open={open}
+                isMobile={isMobile}
+                onClose={isMobile ? handleDrawerClose : undefined}
+                ModalProps={{
+                    keepMounted: true, // Better open performance on mobile.
+                }}
+                sx={{
+                    '& .MuiDrawer-paper': {
+                        // width: drawerWidth, // We handle width in styled component now
+                        ...(isMobile && {
+                            width: drawerWidth, // Always full width on mobile when open
+                            // position: 'fixed', // MUI temporary drawer is already fixed
+                        }),
+                    }
+                }}
+            >
                 <DrawerHeader>
                     {open ? (
                         <IconButton onClick={handleDrawerClose} sx={{ color: 'white' }}>
@@ -163,6 +193,7 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                                         <ListItemButton
                                             component={Link}
                                             to={item.path}
+                                            onClick={isMobile ? handleDrawerClose : undefined} // Close drawer on navigation on mobile
                                             sx={{
                                                 minHeight: 48,
                                                 justifyContent: open ? 'initial' : 'center',
@@ -193,8 +224,7 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                     </Collapse>
                 </List>
             </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-                {/* <DrawerHeader />  Optional: if we want to push content down, but we might not need it if we don't have a top AppBar covering content */}
+            <Box component="main" sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f5f5f5', width: '100%' }}>
                 {children}
             </Box>
         </Box>
