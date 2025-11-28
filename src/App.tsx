@@ -7,7 +7,7 @@ import {
   Route,
 } from 'react-router-dom';
 import { AccountForm } from './components/AccountForm';
-import AccountList from './components/AccountList';
+import { AccountList } from './components/AccountList';
 import { AccountCardsScreen } from './components/AccountCardsScreen';
 import { Dashboard } from './components/Dashboard';
 import { Reports } from './components/Reports';
