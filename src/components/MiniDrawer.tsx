@@ -23,6 +23,8 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import Collapse from '@mui/material/Collapse';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import RouterIcon from '@mui/icons-material/Router';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import { Link, useLocation } from 'react-router-dom';
 import { Tooltip } from '@mui/material';
 
@@ -222,6 +224,70 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                             ))}
                         </List>
                     </Collapse>
+
+                    {/* Gestión de Equipos Item */}
+                    <ListItem disablePadding sx={{ display: 'block' }}>
+                        <Tooltip title={!open ? "Gestión de Equipos" : ""} placement="right">
+                            <ListItemButton
+                                component={Link}
+                                to="/equipment"
+                                sx={{
+                                    minHeight: 48,
+                                    justifyContent: open ? 'initial' : 'center',
+                                    px: 2.5,
+                                    backgroundColor: location.pathname === '/equipment' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                    }
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: open ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                        color: 'white'
+                                    }}
+                                >
+                                    <RouterIcon />
+                                </ListItemIcon>
+                                <ListItemText primary="Gestión de Equipos" sx={{ opacity: open ? 1 : 0 }} />
+                            </ListItemButton>
+                        </Tooltip>
+                    </ListItem>
+
+                    {/* Soporte Técnico Item */}
+                    <ListItem disablePadding sx={{ display: 'block' }}>
+                        <Tooltip title={!open ? "Soporte Técnico" : ""} placement="right">
+                            <ListItemButton
+                                component={Link}
+                                to="/support"
+                                sx={{
+                                    minHeight: 48,
+                                    justifyContent: open ? 'initial' : 'center',
+                                    px: 2.5,
+                                    backgroundColor: location.pathname === '/support' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                    }
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: open ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                        color: 'white'
+                                    }}
+                                >
+                                    <SupportAgentIcon />
+                                </ListItemIcon>
+                                <ListItemText primary="Soporte Técnico" sx={{ opacity: open ? 1 : 0 }} />
+                            </ListItemButton>
+                        </Tooltip>
+                    </ListItem>
+
+
                 </List>
             </Drawer>
             <Box component="main" sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f5f5f5', width: '100%' }}>
