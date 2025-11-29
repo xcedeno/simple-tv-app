@@ -38,6 +38,37 @@ interface Account {
     devices: Device[];
 }
 
+interface ExpiringDevice {
+    decoder: string;
+    date: string;
+    daysLeft: number;
+}
+
+interface ExpiringAccount {
+    alias: string;
+    email: string;
+    devices: ExpiringDevice[];
+    minDaysLeft: number;
+}
+
+const calculateBalanceFromCutoff = (cutoffDate: string): number => {
+    const serviceDayValue = 0.8;
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const cutoff = new Date(cutoffDate);
+    cutoff.setUTCHours(0, 0, 0, 0);
+
+    if (cutoff < today) {
+        return 0;
+    }
+
+    const diffTime = cutoff.getTime() - today.getTime();
+    // +1 para incluir el día de hoy en el cálculo de días restantes.
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const balance = diffDays * serviceDayValue;
+    return balance;
+};
+
 export const Reports: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
@@ -46,7 +77,7 @@ export const Reports: React.FC = () => {
         avgBalance: 0,
         activeDevices: 0,
         expiredDevices: 0,
-        expiringSoon: [] as { alias: string; email: string; decoder: string; date: string; daysLeft: number }[],
+        expiringSoon: [] as ExpiringAccount[],
         devicesByRoom: {} as Record<string, number>
     });
 
@@ -64,7 +95,7 @@ export const Reports: React.FC = () => {
 
             if (data) {
 
-                calculateStats(data);
+                calculateStats(data as Account[]);
             }
         } catch (error) {
             console.error('Error fetching reports data:', error);
@@ -78,15 +109,15 @@ export const Reports: React.FC = () => {
         let totalDevices = 0;
         let active = 0;
         let expired = 0;
-        const expiring: typeof stats.expiringSoon = [];
+        const expiringByAlias: Record<string, { email: string; devices: { decoder: string; date: string; daysLeft: number }[] }> = {};
         const byRoom: Record<string, number> = {};
         const today = dayjs();
 
         data.forEach(acc => {
             if (acc.devices && Array.isArray(acc.devices)) {
                 acc.devices.forEach((dev: Device) => {
-                    // Financials
-                    totalBalance += Number(dev.balance) || 0;
+                    // Financials - Usamos el cálculo dinámico basado en la fecha de corte
+                    totalBalance += calculateBalanceFromCutoff(dev.cutoff_date);
                     totalDevices++;
 
                     // Status
@@ -101,9 +132,14 @@ export const Reports: React.FC = () => {
 
                     // Expirations (Next 30 days)
                     if (daysDiff >= 0 && daysDiff <= 30) {
-                        expiring.push({
-                            alias: acc.alias || acc.email,
-                            email: acc.email,
+                        const alias = acc.alias || acc.email;
+                        if (!expiringByAlias[alias]) {
+                            expiringByAlias[alias] = {
+                                email: acc.email,
+                                devices: []
+                            };
+                        }
+                        expiringByAlias[alias].devices.push({
                             decoder: dev.decoder_id,
                             date: dev.cutoff_date,
                             daysLeft: daysDiff
@@ -117,8 +153,18 @@ export const Reports: React.FC = () => {
             }
         });
 
+        const expiring: ExpiringAccount[] = Object.entries(expiringByAlias).map(([alias, data]) => {
+            const minDaysLeft = Math.min(...data.devices.map(d => d.daysLeft));
+            return {
+                alias,
+                email: data.email,
+                devices: data.devices.sort((a, b) => a.daysLeft - b.daysLeft), // Sort devices within the account
+                minDaysLeft
+            };
+        });
+
         // Sort expiring by days left
-        expiring.sort((a, b) => a.daysLeft - b.daysLeft);
+        expiring.sort((a, b) => a.minDaysLeft - b.minDaysLeft);
 
         setStats({
             totalBalance,
@@ -238,50 +284,58 @@ export const Reports: React.FC = () => {
                                 </TableHead>
                                 <TableBody>
                                     {stats.expiringSoon.length > 0 ? (
-                                        stats.expiringSoon.map((item, index) => {
-                                            const handleWhatsApp = () => {
-                                                const message = `Hola ${item.alias}, te recordamos que tu cuenta con decodificador ${item.decoder} vence el ${dayjs(item.date).format('DD/MM/YYYY')} (${item.daysLeft} días restantes). Por favor realiza tu pago para evitar cortes.`;
-                                                const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                                                window.open(url, '_blank');
-                                            };
-
-                                            const handleEmail = () => {
-                                                const subject = `Recordatorio de Vencimiento - Decodificador ${item.decoder}`;
-                                                const body = `Hola ${item.alias},\n\nTe recordamos que tu cuenta con decodificador ${item.decoder} vence el ${dayjs(item.date).format('DD/MM/YYYY')} (${item.daysLeft} días restantes).\n\nPor favor realiza tu pago para evitar cortes.\n\nSaludos.`;
-                                                const url = `mailto:${item.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                                                window.location.href = url;
-                                            };
-
-                                            return (
-                                                <TableRow key={index} hover>
-                                                    <TableCell sx={{ fontWeight: 500 }}>{item.alias}</TableCell>
-                                                    <TableCell>{item.decoder}</TableCell>
-                                                    <TableCell>{dayjs(item.date).format('DD/MM/YYYY')}</TableCell>
-                                                    <TableCell>
-                                                        <Chip
-                                                            label={item.daysLeft === 0 ? 'Vence Hoy' : `${item.daysLeft} días`}
-                                                            color={item.daysLeft <= 7 ? 'error' : 'warning'}
-                                                            size="small"
-                                                            sx={{ fontWeight: 'bold' }}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box display="flex" gap={1}>
-                                                            <Tooltip title="Enviar WhatsApp">
-                                                                <IconButton size="small" color="success" onClick={handleWhatsApp}>
-                                                                    <WhatsApp fontSize="small" />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                            <Tooltip title="Enviar Correo">
-                                                                <IconButton size="small" color="primary" onClick={handleEmail}>
-                                                                    <Email fontSize="small" />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        </Box>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
+                                        stats.expiringSoon.map((account, accIndex) => (
+                                            <React.Fragment key={accIndex}>
+                                                {account.devices.map((device, devIndex) => {
+                                                    return (
+                                                        <TableRow key={`${accIndex}-${devIndex}`} hover>
+                                                            {devIndex === 0 && (
+                                                                <TableCell rowSpan={account.devices.length} sx={{ fontWeight: 500, verticalAlign: 'top' }}>
+                                                                    {account.alias}
+                                                                </TableCell>
+                                                            )}
+                                                            <TableCell>{device.decoder}</TableCell>
+                                                            <TableCell>{dayjs(device.date).format('DD/MM/YYYY')}</TableCell>
+                                                            <TableCell>
+                                                                <Chip
+                                                                    label={device.daysLeft === 0 ? 'Vence Hoy' : `${device.daysLeft} días`}
+                                                                    color={device.daysLeft <= 7 ? 'error' : 'warning'}
+                                                                    size="small"
+                                                                    sx={{ fontWeight: 'bold' }}
+                                                                />
+                                                            </TableCell>
+                                                            {devIndex === 0 && (
+                                                                <TableCell rowSpan={account.devices.length} sx={{ verticalAlign: 'top' }}>
+                                                                    <Box display="flex" flexDirection="column" gap={1}>
+                                                                        <Tooltip title="Enviar WhatsApp (resumen)">
+                                                                            <IconButton size="small" color="success" onClick={() => {
+                                                                                const devicesInfo = account.devices.map(d => `Deco: ${d.decoder} - Vence: ${dayjs(d.date).format('DD/MM/YYYY')} (${d.daysLeft} días)`).join('\n');
+                                                                                const message = `Hola ${account.alias}, te recordamos los próximos vencimientos de tus decodificadores:\n\n${devicesInfo}\n\nPor favor realiza tu pago para evitar cortes.`;
+                                                                                const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                                                                                window.open(url, '_blank');
+                                                                            }}>
+                                                                                <WhatsApp fontSize="small" />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title="Enviar Correo (resumen)">
+                                                                            <IconButton size="small" color="primary" onClick={() => {
+                                                                                const devicesInfo = account.devices.map(d => `Decodificador ${d.decoder} vence el ${dayjs(d.date).format('DD/MM/YYYY')} (${d.daysLeft} días restantes).`).join('\n');
+                                                                                const subject = `Recordatorio de Vencimientos`;
+                                                                                const body = `Hola ${account.alias},\n\nTe recordamos los próximos vencimientos de tus decodificadores:\n\n${devicesInfo}\n\nPor favor realiza tu pago para evitar cortes.\n\nSaludos.`;
+                                                                                const url = `mailto:${account.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                                                                                window.location.href = url;
+                                                                            }}>
+                                                                                <Email fontSize="small" />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
+                                                                </TableCell>
+                                                            )}
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        ))
                                     ) : (
                                         <TableRow>
                                             <TableCell colSpan={5} align="center">

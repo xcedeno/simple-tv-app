@@ -22,10 +22,13 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  Grid
 } from '@mui/material';
+
+// IMPORTANTE: Importación correcta para MUI v6/v7 (Grid V2)
+import Grid from '@mui/material/Grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
+// --- Interfaces ---
 interface Device {
   decoder_id: string;
   access_card_number: string;
@@ -45,7 +48,25 @@ interface AccountListProps {
   refresh: boolean;
 }
 
-// Componente memoizado para la tabla de dispositivos
+// --- Helpers ---
+const calculateBalanceFromCutoff = (cutoffDate: string): number => {
+  const serviceDayValue = 0.8;
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const cutoff = new Date(cutoffDate);
+  cutoff.setUTCHours(0, 0, 0, 0);
+
+  if (cutoff < today) {
+    return 0;
+  }
+
+  const diffTime = cutoff.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  const balance = diffDays * serviceDayValue;
+  return balance;
+};
+
+// --- Subcomponentes Memoizados ---
 const DeviceTable = memo(({ devices, accountId, openEditModal }: {
   devices: Device[];
   accountId: string;
@@ -68,7 +89,7 @@ const DeviceTable = memo(({ devices, accountId, openEditModal }: {
           <TableRow key={`${device.decoder_id}-${index}`}>
             <TableCell>{device.decoder_id}</TableCell>
             <TableCell>{device.access_card_number}</TableCell>
-            <TableCell>${device.balance}</TableCell>
+            <TableCell>${calculateBalanceFromCutoff(device.cutoff_date).toFixed(2)}</TableCell>
             <TableCell style={{ color: new Date(device.cutoff_date) < new Date() ? 'red' : 'inherit' }}>
               {device.cutoff_date}
             </TableCell>
@@ -89,7 +110,6 @@ const DeviceTable = memo(({ devices, accountId, openEditModal }: {
   </TableContainer>
 ));
 
-// Componente memoizado para cada acordeón
 const AccountAccordion = memo(({
   account,
   expandedAccounts,
@@ -123,6 +143,7 @@ const AccountAccordion = memo(({
   </Accordion>
 ));
 
+// --- Componente Principal ---
 export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<string>('');
@@ -135,7 +156,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
   const [searchResult, setSearchResult] = useState<{ device: Device; alias: string } | null>(null);
   const [openSearchModal, setOpenSearchModal] = useState(false);
 
-  // Función para obtener cuentas
+  // Funciones de carga y lógica
   const fetchAccounts = useCallback(async () => {
     const { data, error } = await supabase.from('accounts').select('*');
     if (error) {
@@ -149,7 +170,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
     fetchAccounts();
   }, [refresh, fetchAccounts]);
 
-  // Handlers optimizados con useCallback
   const handleAccordionChange = useCallback((accountId: string) =>
     (_event: SyntheticEvent, isExpanded: boolean) => {
       setExpandedAccounts(prev => {
@@ -194,22 +214,17 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
     const account = accounts.find((acc) => acc.id === editingAccountId);
     if (!account) return;
 
-    // Sincronizar fecha de corte con otras cuentas del mismo email
     const currentAccount = accounts.find(acc => acc.id === editingAccountId);
     if (currentAccount && editingDevice) {
       const newCutoffDate = editingDevice.cutoff_date;
-
-      // Encontrar todas las cuentas con el mismo email
       const sameEmailAccounts = accounts.filter(acc => acc.email === currentAccount.email);
 
-      // Actualizar estado local y base de datos para todas las cuentas afectadas
       const updates = sameEmailAccounts.map(async (acc) => {
         const updatedAccDevices = acc.devices.map(d => ({
           ...d,
           cutoff_date: newCutoffDate
         }));
 
-        // Actualizar DB
         await supabase
           .from('accounts')
           .update({ devices: updatedAccDevices })
@@ -220,7 +235,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
 
       await Promise.all(updates);
 
-      // Actualizar el estado local globalmente
       const updatedAccountsList = accounts.map(acc => {
         if (acc.email === currentAccount.email) {
           return {
@@ -238,7 +252,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
     } else {
       fetchAccounts();
     }
-
     closeEditModal();
   }, [editingDevice, editingAccountId, editingDeviceIndex, accounts, fetchAccounts, closeEditModal]);
 
@@ -271,105 +284,103 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
     return cutoff < today;
   }, []);
 
-  // Ordenar cuentas por email
   const sortedAccounts = useCallback((accountsToSort: Account[]): Account[] => {
     return [...accountsToSort].sort((a, b) => a.email.localeCompare(b.email));
   }, []);
 
+  // --- RENDERIZADO CORREGIDO (Grid V2 + Fix Overload) ---
   return (
-    <Grid container spacing={3}>
-      <Grid size={{ xs: 12 }}>
-        <Paper style={{ padding: '16px' }}>
-          <Typography variant="h5" style={{ marginBottom: '16px' }}>
-            Lista de Cuentas
-          </Typography>
+    <Box sx={{ width: '100%', p: 2 }}>
 
-          <Grid container spacing={2} alignItems="center" style={{ marginBottom: '20px' }}>
-            <Grid size={{ xs: 12, md: 5 }}>
-              <TextField
-                fullWidth
-                label="Buscar por Número de Tarjeta"
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                size="small"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: '#f5f5f5',
-                    '&:hover fieldset': {
-                      borderColor: '#3f51b5',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3f51b5',
-                    },
-                  },
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                onClick={handleSearch}
-                size="medium"
-                style={{ height: '40px', borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
-              >
-                Buscar
-              </Button>
-            </Grid>
-            <Grid size={{ xs: 12, md: 5 }}>
-              <Select
-                value={selectedEmail}
-                onChange={handleEmailSelectChange}
-                displayEmpty
-                fullWidth
-                size="small"
-                sx={{
+      <Paper style={{ padding: '16px' }}>
+        <Typography variant="h5" style={{ marginBottom: '16px' }}>
+          Lista de Cuentas
+        </Typography>
+
+        {/* Grid Container (V2) 
+          Usamos 'container' para habilitar el espaciado (spacing).
+        */}
+        <Grid container spacing={2} alignItems="center" style={{ marginBottom: '20px' }}>
+
+          {/* Input de Búsqueda */}
+          <Grid size={{ xs: 12, md: 5 }}>
+            <TextField
+              fullWidth
+              label="Buscar por Número de Tarjeta"
+              value={searchTerm}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
                   backgroundColor: '#f5f5f5',
-                  '&:hover': {
-                    backgroundColor: '#e0e0e0',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3f51b5',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3f51b5',
-                  },
-                }}
-              >
-                <MenuItem value="">
-                  <Typography sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                    Todos los correos
-                  </Typography>
-                </MenuItem>
-                {Array.from(new Set(accounts.map(acc => acc.email))).map((email) => (
-                  <MenuItem key={email} value={email}>
-                    {email}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Grid>
+                  '&:hover fieldset': { borderColor: '#3f51b5' },
+                  '&.Mui-focused fieldset': { borderColor: '#3f51b5' },
+                },
+              }}
+            />
           </Grid>
 
-          {/* Lista de acordeones optimizada con scroll */}
-          <Box sx={{ maxHeight: '70vh', overflow: 'auto' }}>
-            {sortedAccounts(accounts).map((account) => (
-              <AccountAccordion
-                key={account.id}
-                account={account}
-                expandedAccounts={expandedAccounts}
-                handleAccordionChange={handleAccordionChange}
-                openEditModal={openEditModal}
-              />
-            ))}
-          </Box>
-        </Paper>
-      </Grid>
+          {/* Botón Buscar */}
+          <Grid size={{ xs: 12, md: 2 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              onClick={handleSearch}
+              size="medium"
+              style={{ height: '40px', borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
+            >
+              Buscar
+            </Button>
+          </Grid>
+
+          {/* Select de Email */}
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Select
+              value={selectedEmail}
+              onChange={handleEmailSelectChange}
+              displayEmpty
+              fullWidth
+              size="small"
+              sx={{
+                borderRadius: '12px',
+                backgroundColor: '#f5f5f5',
+                '&:hover': { backgroundColor: '#e0e0e0' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#3f51b5' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#3f51b5' },
+              }}
+            >
+              <MenuItem value="">
+                <Typography sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                  Todos los correos
+                </Typography>
+              </MenuItem>
+              {Array.from(new Set(accounts.map(acc => acc.email))).map((email) => (
+                <MenuItem key={email} value={email}>
+                  {email}
+                </MenuItem>
+              ))}
+            </Select>
+          </Grid>
+        </Grid>
+
+        {/* Lista Scrollable */}
+        <Box sx={{ maxHeight: '70vh', overflow: 'auto' }}>
+          {sortedAccounts(accounts).map((account) => (
+            <AccountAccordion
+              key={account.id}
+              account={account}
+              expandedAccounts={expandedAccounts}
+              handleAccordionChange={handleAccordionChange}
+              openEditModal={openEditModal}
+            />
+          ))}
+        </Box>
+      </Paper>
+
+      {/* --- MODALES --- */}
 
       {/* Modal de búsqueda */}
       <Dialog open={openSearchModal} onClose={closeSearchModal}>
@@ -387,7 +398,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
                 <strong>Número de Tarjeta:</strong> {searchResult.device.access_card_number}
               </Typography>
               <Typography variant="body1">
-                <strong>Saldo:</strong> {searchResult.device.balance}
+                <strong>Saldo:</strong> ${calculateBalanceFromCutoff(searchResult.device.cutoff_date).toFixed(2)}
               </Typography>
               <Typography variant="body1" style={{ color: isExpired(searchResult.device.cutoff_date) ? '#c62828' : 'inherit' }}>
                 <strong>Fecha de Corte:</strong> {searchResult.device.cutoff_date}
@@ -438,17 +449,15 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
             margin="normal"
           />
           <TextField
-            label="Saldo"
+            label="Saldo (calculado)"
             type="number"
-            value={editingDevice?.balance || 0}
-            onChange={(e) =>
-              setEditingDevice((prev) => ({
-                ...prev!,
-                balance: Number(e.target.value),
-              }))
-            }
+            value={editingDevice ? calculateBalanceFromCutoff(editingDevice.cutoff_date).toFixed(2) : 0}
             fullWidth
             margin="normal"
+            InputProps={{
+              readOnly: true,
+            }}
+            helperText="El saldo se calcula en base a la fecha de corte."
           />
           <TextField
             label="Fecha de Corte"
@@ -498,6 +507,6 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Grid>
+    </Box>
   );
 };
