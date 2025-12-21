@@ -1,9 +1,8 @@
-// src/components/AccountCardsScreen.tsx
-
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Paper, Typography, Grid, Button } from '@mui/material';
 import { AccountCard } from './AccountCard';
+import { CheckRequestModal } from './CheckRequestModal';
 
 // Interfaz para un dispositivo
 interface Device {
@@ -24,6 +23,7 @@ interface Account {
 
 export const AccountCardsScreen = () => {
     const [accounts, setAccounts] = useState<Account[]>([]);
+    const [checkRequestOpen, setCheckRequestOpen] = useState(false);
 
     // Obtener cuentas de Supabase
     useEffect(() => {
@@ -33,23 +33,6 @@ export const AccountCardsScreen = () => {
     const fetchAccounts = async () => {
         const { data } = await supabase.from('accounts').select('*');
         setAccounts(data || []);
-    };
-
-    // Función para descargar el archivo .xls usando una URL directa
-    const downloadFile = () => {
-        try {
-            // URL directa del archivo
-            const fileUrl = 'https://prxzjevldfpjwscwuarx.supabase.co/storage/v1/object/public/forms//Simple-tv.xls';
-
-            // Crear un enlace temporal y simular un clic para descargar el archivo
-            const link = document.createElement('a');
-            link.href = fileUrl; // URL directa del archivo
-            link.download = 'Simple-tv.xls'; // Nombre del archivo al descargar
-            link.click();
-        } catch (err) {
-            console.error('Error al descargar el archivo:', err);
-            alert('Ocurrió un error al descargar el archivo.');
-        }
     };
 
     return (
@@ -62,7 +45,7 @@ export const AccountCardsScreen = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={downloadFile}
+                    onClick={() => setCheckRequestOpen(true)}
                     sx={{
                         borderRadius: '12px',
                         textTransform: 'none',
@@ -96,6 +79,12 @@ export const AccountCardsScreen = () => {
                     );
                 })}
             </Grid>
+
+            <CheckRequestModal
+                open={checkRequestOpen}
+                onClose={() => setCheckRequestOpen(false)}
+                accounts={accounts}
+            />
         </Paper>
     );
 };
