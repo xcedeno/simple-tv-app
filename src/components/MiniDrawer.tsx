@@ -23,6 +23,8 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import Collapse from '@mui/material/Collapse';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import RouterIcon from '@mui/icons-material/Router';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import { Link, useLocation } from 'react-router-dom';
 import { Tooltip } from '@mui/material';
 
@@ -135,11 +137,12 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                 }}
                 sx={{
                     '& .MuiDrawer-paper': {
-                        // width: drawerWidth, // We handle width in styled component now
-                        ...(isMobile && {
-                            width: drawerWidth, // Always full width on mobile when open
-                            // position: 'fixed', // MUI temporary drawer is already fixed
-                        }),
+                        width: isMobile ? drawerWidth : undefined, // Full width on mobile when open
+                        ...(isMobile ? {
+                            // Mobile styles handled by temporary variant mostly
+                        } : {
+                            // Desktop styles handled by mixins
+                        })
                     }
                 }}
             >
@@ -222,9 +225,88 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                             ))}
                         </List>
                     </Collapse>
+
+                    {/* Gestión de Equipos Item */}
+                    <ListItem disablePadding sx={{ display: 'block' }}>
+                        <Tooltip title={!open ? "Gestión de Equipos" : ""} placement="right">
+                            <ListItemButton
+                                component={Link}
+                                to="/equipment"
+                                onClick={isMobile ? handleDrawerClose : undefined}
+                                sx={{
+                                    minHeight: 48,
+                                    justifyContent: open ? 'initial' : 'center',
+                                    px: 2.5,
+                                    backgroundColor: location.pathname === '/equipment' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                    }
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: open ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                        color: 'white'
+                                    }}
+                                >
+                                    <RouterIcon />
+                                </ListItemIcon>
+                                <ListItemText primary="Gestión de Equipos" sx={{ opacity: open ? 1 : 0 }} />
+                            </ListItemButton>
+                        </Tooltip>
+                    </ListItem>
+
+                    {/* Soporte Técnico Item */}
+                    <ListItem disablePadding sx={{ display: 'block' }}>
+                        <Tooltip title={!open ? "Soporte Técnico" : ""} placement="right">
+                            <ListItemButton
+                                component={Link}
+                                to="/support"
+                                onClick={isMobile ? handleDrawerClose : undefined}
+                                sx={{
+                                    minHeight: 48,
+                                    justifyContent: open ? 'initial' : 'center',
+                                    px: 2.5,
+                                    backgroundColor: location.pathname === '/support' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                    }
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: open ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                        color: 'white'
+                                    }}
+                                >
+                                    <SupportAgentIcon />
+                                </ListItemIcon>
+                                <ListItemText primary="Soporte Técnico" sx={{ opacity: open ? 1 : 0 }} />
+                            </ListItemButton>
+                        </Tooltip>
+                    </ListItem>
+
+
                 </List>
             </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f5f5f5', width: '100%' }}>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, maxWidth: '100%', overflowX: 'auto', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+                {isMobile && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            onClick={handleDrawerOpen}
+                            edge="start"
+                            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    </Box>
+                )}
                 {children}
             </Box>
         </Box>
