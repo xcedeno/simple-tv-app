@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -17,10 +17,18 @@ import {
     TableRow,
     Paper,
     IconButton,
-    Divider
+    InputAdornment,
+    FormControl,
+    FormLabel,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
+    Checkbox,
+    Chip,
+    CircularProgress
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { PictureAsPdf } from '@mui/icons-material';
+import { PictureAsPdf, CurrencyExchange } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
@@ -45,33 +53,63 @@ interface CheckRequestModalProps {
 
 export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onClose, accounts }) => {
     const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-    const [amount, setAmount] = useState<string>('');
+    const [inputAmount, setInputAmount] = useState<string>('');
     const [requestItems, setRequestItems] = useState<RequestItem[]>([]);
 
+    // Currency & Exchange Rate State
+    const [exchangeRate, setExchangeRate] = useState<number>(0);
+    const [loadingRate, setLoadingRate] = useState<boolean>(false);
+    const [checkCurrency, setCheckCurrency] = useState<'VES' | 'USD'>('VES');
+    const [useUSDInput, setUseUSDInput] = useState<boolean>(false); // If true, input is in USD, converted to VES for the table
+
+    useEffect(() => {
+        if (open) {
+            fetchExchangeRate();
+        }
+    }, [open]);
+
+    const fetchExchangeRate = async () => {
+        setLoadingRate(true);
+        try {
+            const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+            const data = await response.json();
+            if (data && data.promedio) {
+                setExchangeRate(data.promedio);
+            }
+        } catch (error) {
+            console.error("Error fetching exchange rate:", error);
+        } finally {
+            setLoadingRate(false);
+        }
+    };
+
     const handleAddItem = () => {
-        if (!selectedAccount || !amount || parseFloat(amount) <= 0) return;
+        if (!selectedAccount || !inputAmount || parseFloat(inputAmount) <= 0) return;
+
+        let finalAmount = parseFloat(inputAmount);
+
+        // Conversion logic
+        if (checkCurrency === 'VES' && useUSDInput) {
+            finalAmount = finalAmount * exchangeRate;
+        }
 
         const newItem: RequestItem = {
             id: selectedAccount.id,
             accountAlias: selectedAccount.alias || selectedAccount.email,
-            amount: parseFloat(amount)
+            amount: finalAmount
         };
 
-        // Check if already added? Maybe allow duplicates or update existing? 
-        // Let's allow multiple entries or update existing for now.
-        // Assuming unique alias/account in list is better.
         const existingIndex = requestItems.findIndex(item => item.id === selectedAccount.id);
         if (existingIndex >= 0) {
-            // Update existing
             const updated = [...requestItems];
-            updated[existingIndex].amount = parseFloat(amount); // Overwrite or add? User likely wants to set the specific amount for the reload.
+            updated[existingIndex].amount = finalAmount;
             setRequestItems(updated);
         } else {
             setRequestItems([...requestItems, newItem]);
         }
 
         setSelectedAccount(null);
-        setAmount('');
+        setInputAmount('');
     };
 
     const handleDeleteItem = (id: string) => {
@@ -80,12 +118,16 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
 
     const totalAmount = requestItems.reduce((sum, item) => sum + item.amount, 0);
 
-    const generatePDF = () => {
+    // Preview State
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const generatePDF = (action: 'download' | 'preview') => {
         const doc = new jsPDF();
 
         // -- Header --
-        // Use a simple box or text for the logo placeholder if no image available.
-        // "IKIN MARGARITA HOTEL & SPA" text centered
+        // Top Logo Area (Placeholder)
+        // Title Center
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text("HOTEL KARIBIK PLAYA CARDON C.A", 105, 20, { align: "center" });
@@ -171,7 +213,10 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
 
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 255);
-        doc.text(totalAmount.toFixed(2), 120, yPos, { align: "right" });
+
+        // Format Amount
+        doc.text(totalAmount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, yPos, { align: "right" });
+
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
         doc.line(80, yPos + 1, 122, yPos + 1);
@@ -179,16 +224,19 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
         // Checkboxes generic
         doc.rect(130, yPos - 3, 4, 4);
         doc.text("Bolivares", 136, yPos);
-        doc.text("x", 131, yPos); // checked for Bolivares? Or Dollars? 
-        // User image shows "x" in Bolivares box. But amounts in image show "0,00".
-        // Let's assume user might want Dollars too, but for now replicate image.
+        if (checkCurrency === 'VES') {
+            doc.text("x", 131, yPos);
+        }
+
         doc.rect(130, yPos + 2, 4, 4);
         doc.text("US Dollars", 136, yPos + 5);
-
+        if (checkCurrency === 'USD') {
+            doc.text("x", 131, yPos + 5);
+        }
 
         yPos += 8;
         doc.text("Favor efectuar pago en la siguiente fecha:", 14, yPos);
-        doc.line(90, yPos + 1, 130, yPos + 1); // line
+        doc.line(90, yPos + 1, 130, yPos + 1);
 
         yPos += 6;
         doc.text("Descripción general:", 14, yPos);
@@ -196,20 +244,17 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
         doc.setFont("helvetica", "bold");
         doc.text("Pago de servicio SimpleTV, cuentas varias:", 60, yPos);
         doc.setTextColor(0, 0, 0);
-        // doc.line(60, yPos+1, 190, yPos+1);
 
         // -- Table --
-        // Using autoTable
         yPos += 10;
 
         const tableBody = requestItems.map(item => [
             item.accountAlias,
             "", // Factura No.
             "", // Cuenta de Gasto
-            item.amount.toFixed(2)
+            item.amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         ]);
 
-        // Add empty rows to fill space if needed, similar to image
         const minRows = 10;
         while (tableBody.length < minRows) {
             tableBody.push(["", "", "", ""]);
@@ -219,16 +264,16 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
             startY: yPos,
             head: [['Concepto o Descripción de Pago', 'Factura No.', 'Cuenta de Gasto', 'Total a Pagar']],
             body: tableBody,
-            theme: 'plain', // To look like the image (clean)
+            theme: 'plain',
             styles: {
-                lineColor: [0, 0, 0], // Black borders? Or Green/Dotted?
+                lineColor: [0, 0, 0],
                 lineWidth: 0.1,
                 cellPadding: 1,
                 fontSize: 10,
                 textColor: 0
             },
             headStyles: {
-                fillColor: [200, 255, 200], // Light green header
+                fillColor: [200, 255, 200],
                 textColor: 0,
                 fontStyle: 'bold',
                 halign: 'center',
@@ -239,9 +284,6 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
                 0: { cellWidth: 100 },
                 3: { halign: 'right' }
             },
-            didDrawPage: (data) => {
-                // Ensure footer is drawn
-            }
         });
 
         // Get final Y from table
@@ -249,7 +291,7 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
 
         // Subtotal / Total
         doc.setFillColor(200, 255, 200);
-        doc.rect(110, finalY, 40, 8, 'F'); // Green bg for labels
+        doc.rect(110, finalY, 40, 8, 'F');
         doc.rect(110, finalY + 8, 40, 8, 'F');
 
         doc.setFont("helvetica", "bold");
@@ -257,8 +299,8 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
         doc.text("Total a Pagar:", 112, finalY + 14);
 
         doc.setTextColor(0, 0, 255);
-        doc.text(totalAmount.toFixed(2), 190, finalY + 6, { align: "right" });
-        doc.text(totalAmount.toFixed(2), 190, finalY + 14, { align: "right" });
+        doc.text(totalAmount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 190, finalY + 6, { align: "right" });
+        doc.text(totalAmount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 190, finalY + 14, { align: "right" });
         doc.setTextColor(0, 0, 0);
 
         // Instructions
@@ -273,107 +315,207 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
         const boxHeight = 25;
         const gap = 10;
 
-        // Box 1
         doc.roundedRect(14, sigY, boxWidth, boxHeight, 3, 3);
         doc.setFontSize(7);
         doc.text("SOLICITADO POR:", 20, sigY + 5);
 
-        // Box 2
         doc.roundedRect(14 + boxWidth + gap, sigY, boxWidth, boxHeight, 3, 3);
         doc.text("APROBADO POR:", 14 + boxWidth + gap + 5, sigY + 5);
         doc.text("Jefe de Departamento", 14 + boxWidth + gap + 5, sigY + 10);
 
-        // Box 3
         doc.roundedRect(14 + (boxWidth + gap) * 2, sigY, boxWidth, boxHeight, 3, 3);
         doc.text("APROBADO POR:", 14 + (boxWidth + gap) * 2 + 5, sigY + 5);
         doc.text("Contralor General,", 14 + (boxWidth + gap) * 2 + 5, sigY + 10);
         doc.text("Subcontralor o Gerente", 14 + (boxWidth + gap) * 2 + 5, sigY + 15);
         doc.text("General", 14 + (boxWidth + gap) * 2 + 5, sigY + 19);
 
-        doc.save('solicitud_cheque_simple_tv.pdf');
+        // Add small Rate note if VES
+        if (checkCurrency === 'VES' && exchangeRate > 0) {
+            doc.setFontSize(6);
+            doc.text(`Tasa Ref: ${exchangeRate.toFixed(2)} Bs/$`, 170, 20);
+        }
+
+        if (action === 'download') {
+            doc.save('solicitud_cheque_simple_tv.pdf');
+        } else {
+            const pdfBlob = doc.output('bloburl');
+            setPreviewUrl(pdfBlob.toString()); // blob:url
+            setPreviewOpen(true);
+        }
     };
 
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>Generar Solicitud de Cheque</DialogTitle>
-            <DialogContent dividers>
-                <Box mb={3} display="flex" gap={2}>
-                    <Autocomplete
-                        options={accounts}
-                        getOptionLabel={(option) => option.alias || option.email}
-                        value={selectedAccount}
-                        onChange={(_, newValue) => setSelectedAccount(newValue)}
-                        renderInput={(params) => <TextField {...params} label="Seleccionar Cuenta" />}
-                        sx={{ flex: 2 }}
-                    />
-                    <TextField
-                        label="Monto"
-                        type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        sx={{ flex: 1 }}
-                    />
+        <>
+            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6">Generar Solicitud de Cheque</Typography>
+                    {exchangeRate > 0 && (
+                        <Chip
+                            icon={<CurrencyExchange />}
+                            label={`Tasa: Bs ${exchangeRate.toFixed(2)}`}
+                            color="success"
+                            variant="outlined"
+                        />
+                    )}
+                </DialogTitle>
+                <DialogContent dividers>
+                    {/* Configuration Section */}
+                    <Box mb={3} p={2} sx={{ bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">Moneda del Cheque</FormLabel>
+                            <RadioGroup
+                                row
+                                value={checkCurrency}
+                                onChange={(e) => {
+                                    setCheckCurrency(e.target.value as 'VES' | 'USD');
+                                    if (e.target.value === 'USD') setUseUSDInput(false);
+                                }}
+                            >
+                                <FormControlLabel value="VES" control={<Radio />} label="Bolívares (Bs)" />
+                                <FormControlLabel value="USD" control={<Radio />} label="Dólares ($)" />
+                            </RadioGroup>
+                        </FormControl>
+                    </Box>
+
+                    <Box mb={3} display="flex" gap={2} alignItems="flex-start" flexWrap="wrap">
+                        <Autocomplete
+                            options={accounts}
+                            getOptionLabel={(option) => option.alias || option.email}
+                            value={selectedAccount}
+                            onChange={(_, newValue) => setSelectedAccount(newValue)}
+                            renderInput={(params) => <TextField {...params} label="Seleccionar Cuenta" />}
+                            sx={{ flexGrow: 1, minWidth: '250px' }}
+                        />
+
+                        <Box display="flex" flexDirection="column" gap={1}>
+                            <TextField
+                                label={useUSDInput ? "Monto ($ USD)" : `Monto (${checkCurrency === 'VES' ? 'Bs' : '$'})`}
+                                type="number"
+                                value={inputAmount}
+                                onChange={(e) => setInputAmount(e.target.value)}
+                                sx={{ width: '150px' }}
+                                InputProps={{
+                                    startAdornment: <InputAdornment position="start">{useUSDInput || checkCurrency === 'USD' ? '$' : 'Bs'}</InputAdornment>,
+                                }}
+                            />
+                            {checkCurrency === 'VES' && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={useUSDInput}
+                                            onChange={(e) => setUseUSDInput(e.target.checked)}
+                                            size="small"
+                                        />
+                                    }
+                                    label={<Typography variant="caption">Calcular desde Divisa ($)</Typography>}
+                                />
+                            )}
+                            {checkCurrency === 'VES' && useUSDInput && inputAmount && (
+                                <Typography variant="caption" color="text.secondary">
+                                    ≈ Bs {(parseFloat(inputAmount) * exchangeRate).toFixed(2)}
+                                </Typography>
+                            )}
+                        </Box>
+
+                        <Button
+                            variant="contained"
+                            onClick={handleAddItem}
+                            disabled={!selectedAccount || !inputAmount}
+                            sx={{ mt: 1 }}
+                        >
+                            Agregar
+                        </Button>
+                    </Box>
+
+                    {/* Table */}
+                    <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Cuenta / Alias</TableCell>
+                                    <TableCell align="right">Monto ({checkCurrency})</TableCell>
+                                    <TableCell align="center">Acciones</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {requestItems.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} align="center">No hay items agregados</TableCell>
+                                    </TableRow>
+                                ) : (
+                                    requestItems.map((item) => (
+                                        <TableRow key={item.id}>
+                                            <TableCell>{item.accountAlias}</TableCell>
+                                            <TableCell align="right">{item.amount.toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
+                                            <TableCell align="center">
+                                                <IconButton size="small" onClick={() => handleDeleteItem(item.id)}>
+                                                    <DeleteIcon color="error" />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                                {requestItems.length > 0 && (
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>{totalAmount.toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
+                                        <TableCell />
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>Cancelar</Button>
+                    <Button
+                        variant="outlined"
+                        onClick={() => generatePDF('preview')}
+                        disabled={requestItems.length === 0 || loadingRate}
+                        sx={{ mr: 1 }}
+                    >
+                        Vista Previa
+                    </Button>
                     <Button
                         variant="contained"
-                        onClick={handleAddItem}
-                        disabled={!selectedAccount || !amount}
+                        startIcon={loadingRate ? <CircularProgress size={20} color="inherit" /> : <PictureAsPdf />}
+                        onClick={() => generatePDF('download')}
+                        disabled={requestItems.length === 0 || loadingRate}
+                        color="primary"
                     >
-                        Agregar
+                        Descargar PDF
                     </Button>
-                </Box>
+                </DialogActions>
+            </Dialog>
 
-                <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Cuenta / Alias</TableCell>
-                                <TableCell align="right">Monto</TableCell>
-                                <TableCell align="center">Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {requestItems.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={3} align="center">No hay items agregados</TableCell>
-                                </TableRow>
-                            ) : (
-                                requestItems.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell>{item.accountAlias}</TableCell>
-                                        <TableCell align="right">{item.amount.toFixed(2)}</TableCell>
-                                        <TableCell align="center">
-                                            <IconButton size="small" onClick={() => handleDeleteItem(item.id)}>
-                                                <DeleteIcon color="error" />
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                            {requestItems.length > 0 && (
-                                <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
-                                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>{totalAmount.toFixed(2)}</TableCell>
-                                    <TableCell />
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancelar</Button>
-                <Button
-                    variant="contained"
-                    startIcon={<PictureAsPdf />}
-                    onClick={generatePDF}
-                    disabled={requestItems.length === 0}
-                    color="primary"
-                >
-                    Descargar PDF
-                </Button>
-            </DialogActions>
-        </Dialog>
+            {/* Preview Dialog */}
+            <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="lg" fullWidth>
+                <DialogTitle>Vista Previa del Documento</DialogTitle>
+                <DialogContent dividers sx={{ height: '80vh', p: 0 }}>
+                    {previewUrl && (
+                        <iframe
+                            src={previewUrl}
+                            style={{ width: '100%', height: '100%', border: 'none' }}
+                            title="PDF Preview"
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPreviewOpen(false)}>Cerrar</Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            setPreviewOpen(false);
+                            generatePDF('download');
+                        }}
+                        color="primary"
+                    >
+                        Descargar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };
