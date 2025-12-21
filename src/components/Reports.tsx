@@ -13,7 +13,9 @@ import {
     TableHead,
     TableRow,
     Chip,
-    Button
+    Button,
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import {
     AttachMoney,
@@ -73,6 +75,8 @@ const calculateBalanceFromCutoff = (cutoffDate: string): number => {
 };
 
 export const Reports: React.FC = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
@@ -190,23 +194,30 @@ export const Reports: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: 3, maxWidth: '1600px', margin: '0 auto' }}>
+        <Box sx={{ p: isMobile ? 1 : 3, maxWidth: '1600px', margin: '0 auto', overflowX: 'hidden' }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a237e' }}>
-                    Reportes y Estadísticas
+                <Typography
+                    variant={isMobile ? "h5" : "h4"}
+                    sx={{ fontWeight: 800, color: '#1a237e' }}
+                >
+                    {isMobile ? "Reportes" : "Reportes y Estadísticas"}
                 </Typography>
                 <Button
                     variant="contained"
-                    startIcon={<PictureAsPdf />}
+                    startIcon={isMobile ? null : <PictureAsPdf />}
                     onClick={() => setModalOpen(true)}
                     sx={{
                         borderRadius: '12px',
                         textTransform: 'none',
                         background: 'linear-gradient(45deg, #1a237e 30%, #283593 90%)',
-                        boxShadow: '0 3px 5px 2px rgba(26, 35, 126, .3)'
+                        boxShadow: '0 3px 5px 2px rgba(26, 35, 126, .3)',
+                        minWidth: isMobile ? '48px' : 'auto',
+                        width: isMobile ? '48px' : 'auto',
+                        height: isMobile ? '48px' : 'auto',
+                        p: isMobile ? 0 : 2
                     }}
                 >
-                    Generar Reporte PDF
+                    {isMobile ? <PictureAsPdf /> : "Generar Reporte PDF"}
                 </Button>
             </Box>
 
@@ -290,15 +301,15 @@ export const Reports: React.FC = () => {
 
                 {/* Expiring Soon Table */}
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <Paper sx={{ p: 3, borderRadius: '20px', overflow: 'hidden' }}>
+                    <Paper sx={{ p: 3, borderRadius: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                         <Box display="flex" alignItems="center" mb={3}>
                             <Warning color="warning" sx={{ mr: 1 }} />
                             <Typography variant="h6" fontWeight={700}>
                                 Próximos Vencimientos (30 días)
                             </Typography>
                         </Box>
-                        <TableContainer sx={{ maxHeight: 400 }}>
-                            <Table stickyHeader>
+                        <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
+                            <Table stickyHeader sx={{ minWidth: 650 }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Cliente</TableCell>

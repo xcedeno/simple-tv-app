@@ -137,11 +137,12 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                 }}
                 sx={{
                     '& .MuiDrawer-paper': {
-                        // width: drawerWidth, // We handle width in styled component now
-                        ...(isMobile && {
-                            width: drawerWidth, // Always full width on mobile when open
-                            // position: 'fixed', // MUI temporary drawer is already fixed
-                        }),
+                        width: isMobile ? drawerWidth : undefined, // Full width on mobile when open
+                        ...(isMobile ? {
+                            // Mobile styles handled by temporary variant mostly
+                        } : {
+                            // Desktop styles handled by mixins
+                        })
                     }
                 }}
             >
@@ -231,6 +232,7 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                             <ListItemButton
                                 component={Link}
                                 to="/equipment"
+                                onClick={isMobile ? handleDrawerClose : undefined}
                                 sx={{
                                     minHeight: 48,
                                     justifyContent: open ? 'initial' : 'center',
@@ -262,6 +264,7 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                             <ListItemButton
                                 component={Link}
                                 to="/support"
+                                onClick={isMobile ? handleDrawerClose : undefined}
                                 sx={{
                                     minHeight: 48,
                                     justifyContent: open ? 'initial' : 'center',
@@ -290,7 +293,20 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
 
                 </List>
             </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f5f5f5', width: '100%' }}>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, maxWidth: '100%', overflowX: 'auto', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+                {isMobile && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            onClick={handleDrawerOpen}
+                            edge="start"
+                            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    </Box>
+                )}
                 {children}
             </Box>
         </Box>
