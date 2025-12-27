@@ -3,7 +3,8 @@ import {
     Box, Typography, Paper, Tabs, Tab, CircularProgress, Alert, Snackbar,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     TextField, InputAdornment, TablePagination,
-    Button, Chip, FormControlLabel, Checkbox, MenuItem, Stack,
+    Button, Chip, FormControlLabel, Checkbox, MenuItem, Stack, Grid,
+    Card, CardActionArea,
     Dialog, DialogTitle, DialogContent, DialogActions, IconButton
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -44,10 +45,59 @@ const generateUUID = () => {
     });
 };
 
-// --- Subcomponent: InventoryTable ---
+// --- Subcomponent: InventoryDashboard ---
+const InventoryDashboard: React.FC<{ items: InventoryItem[] }> = ({ items }) => {
+    const stats = {
+        total: items.length,
+        tvs: items.filter(i => i.equipment_type === 'TELEVISOR').length,
+        neveras: items.filter(i => i.equipment_type === 'NEVERA').length,
+        otros: items.filter(i => !['TELEVISOR', 'NEVERA'].includes(i.equipment_type)).length,
+        smartTv: items.filter(i => i.is_smart_tv).length
+    };
+
+    const dashboardCards = [
+        { label: 'Total Equipos', value: stats.total, color: '#1a237e', icon: <DevicesOtherIcon sx={{ fontSize: 40 }} /> },
+        { label: 'Televisores', value: stats.tvs, color: '#2ed573', icon: <TvIcon sx={{ fontSize: 40 }} /> },
+        { label: 'Neveras', value: stats.neveras, color: '#ffa502', icon: <KitchenIcon sx={{ fontSize: 40 }} /> },
+        { label: 'Smart TVs', value: stats.smartTv, color: '#5352ed', icon: <TvIcon sx={{ fontSize: 40 }} /> },
+    ];
+
+    return (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+            {dashboardCards.map((card, idx) => (
+                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: '20px',
+                            background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}cc 100%)`,
+                            color: 'white',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            transition: 'transform 0.3s ease',
+                            '&:hover': { transform: 'translateY(-5px)' }
+                        }}
+                    >
+                        <Box>
+                            <Typography variant="body2" sx={{ opacity: 0.8, fontWeight: 600 }}>{card.label}</Typography>
+                            <Typography variant="h3" sx={{ fontWeight: 800 }}>{card.value}</Typography>
+                        </Box>
+                        <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', p: 1, borderRadius: '12px' }}>
+                            {card.icon}
+                        </Box>
+                    </Paper>
+                </Grid>
+            ))}
+        </Grid>
+    );
+};
+
 // --- Subcomponent: InventoryTable ---
 const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => void }> = ({ items, onUpdate }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<string | null>(null);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -55,12 +105,19 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
     const [saving, setSaving] = useState(false);
 
-    const filteredItems = items.filter(item =>
-        item.room_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.equipment_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.serial_number && item.serial_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.model && item.model.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const equipmentTypes = ['TELEVISOR', 'NEVERA', 'WIFI', 'TELEFONO', 'DECODIFICADOR', 'OTRO'];
+
+    const filteredItems = items.filter(item => {
+        const matchesSearch =
+            item.room_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.equipment_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.serial_number && item.serial_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.model && item.model.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const matchesType = !typeFilter || item.equipment_type === typeFilter;
+
+        return matchesSearch && matchesType;
+    });
 
     const handleChangePage = (_event: unknown, newPage: number) => setPage(newPage);
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,35 +179,96 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
         }
     };
 
-    const getEquipmentIcon = (type: string) => {
+    const getEquipmentIcon = (type: string, size: 'small' | 'large' = 'small') => {
         const t = type.toLowerCase();
-        if (t.includes('televisor') || t.includes('tv')) return <TvIcon color="primary" />;
-        if (t.includes('nevera')) return <KitchenIcon color="secondary" />;
-        if (t.includes('wifi')) return <WifiIcon color="info" />;
-        if (t.includes('telefono')) return <PhoneIcon color="success" />;
-        if (t.includes('decodificador')) return <SettingsRemoteIcon color="warning" />;
-        return <DevicesOtherIcon />;
-    };
+        const iconProps = {
+            fontSize: size === 'large' ? ('large' as any) : ('small' as any),
+            color: size === 'large' ? 'primary' : ('inherit' as any)
+        };
 
-    const equipmentTypes = ['TELEVISOR', 'NEVERA', 'WIFI', 'TELEFONO', 'DECODIFICADOR', 'OTRO'];
+        if (t.includes('televisor') || t.includes('tv')) return <TvIcon {...iconProps} />;
+        if (t.includes('nevera')) return <KitchenIcon {...iconProps} color={size === 'large' ? 'secondary' : 'inherit'} />;
+        if (t.includes('wifi')) return <WifiIcon {...iconProps} color={size === 'large' ? 'info' : 'inherit'} />;
+        if (t.includes('telefono')) return <PhoneIcon {...iconProps} color={size === 'large' ? 'success' : 'inherit'} />;
+        if (t.includes('decodificador')) return <SettingsRemoteIcon {...iconProps} color={size === 'large' ? 'warning' : 'inherit'} />;
+        return <DevicesOtherIcon {...iconProps} />;
+    };
 
     return (
         <Box>
+            <InventoryDashboard items={items} />
+
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#1a237e' }}>Explorar por Categoría</Typography>
+
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                    <Card
+                        onClick={() => setTypeFilter(null)}
+                        sx={{
+                            borderRadius: '16px',
+                            cursor: 'pointer',
+                            bgcolor: typeFilter === null ? '#1a237e' : 'white',
+                            color: typeFilter === null ? 'white' : 'inherit',
+                            transition: 'all 0.3s ease',
+                            border: '1px solid #1a237e',
+                            '&:hover': { transform: 'scale(1.05)', boxShadow: 4 }
+                        }}
+                    >
+                        <CardActionArea sx={{ p: 2, textAlign: 'center' }}>
+                            <DevicesOtherIcon fontSize="large" sx={{ mb: 1 }} />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>TODOS</Typography>
+                        </CardActionArea>
+                    </Card>
+                </Grid>
+                {equipmentTypes.map(type => (
+                    <Grid size={{ xs: 6, sm: 4, md: 2 }} key={type}>
+                        <Card
+                            onClick={() => setTypeFilter(type)}
+                            sx={{
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                bgcolor: typeFilter === type ? '#1a237e' : 'white',
+                                color: typeFilter === type ? 'white' : 'inherit',
+                                transition: 'all 0.3s ease',
+                                border: '1px solid #e0e0e0',
+                                '&:hover': { transform: 'scale(1.05)', boxShadow: 4 }
+                            }}
+                        >
+                            <CardActionArea sx={{ p: 2, textAlign: 'center' }}>
+                                {getEquipmentIcon(type, 'large')}
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 1 }}>{type}</Typography>
+                            </CardActionArea>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+
             <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                <TextField
-                    placeholder="Buscar por habitación, tipo, modelo o serial..."
-                    variant="outlined" size="small" value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{ width: { xs: '100%', md: 400 }, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
-                        ),
-                    }}
-                />
-                <Typography variant="body2" color="textSecondary">Total: {filteredItems.length} equipos</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <TextField
+                        placeholder="Buscar por habitación, modelo o serial..."
+                        variant="outlined" size="small" value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        sx={{ width: { xs: '100%', md: 400 }, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
+                            ),
+                        }}
+                    />
+                    {typeFilter && (
+                        <Chip
+                            label={`Filtrado por: ${typeFilter}`}
+                            onDelete={() => setTypeFilter(null)}
+                            color="primary"
+                            variant="outlined"
+                        />
+                    )}
+                </Box>
+                <Typography variant="body2" color="textSecondary">Resultados: {filteredItems.length} equipos</Typography>
             </Box>
-            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #eee', borderRadius: '15px' }}>
+
+            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #eee', borderRadius: '15px', overflow: 'hidden' }}>
                 <Table sx={{ minWidth: 650 }}>
                     <TableHead sx={{ bgcolor: '#f1f3f4' }}>
                         <TableRow>
@@ -167,8 +285,11 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                     <TableBody>
                         {filteredItems.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                                    <Typography color="textSecondary">No se encontraron equipos</Typography>
+                                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                                    <Box sx={{ opacity: 0.5 }}>
+                                        <SearchIcon sx={{ fontSize: 40, mb: 1 }} />
+                                        <Typography>No se encontraron equipos en esta categoría</Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -182,7 +303,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                                         </Box>
                                     </TableCell>
                                     <TableCell>{item.model || '-'}</TableCell>
-                                    <TableCell>{item.serial_number || '-'}</TableCell>
+                                    <TableCell sx={{ fontFamily: 'monospace' }}>{item.serial_number || '-'}</TableCell>
                                     <TableCell>
                                         <Chip label={item.asset_number || 'SIN ACT'} size="small" color={item.asset_number ? "default" : "warning"} variant="outlined" />
                                     </TableCell>
@@ -266,7 +387,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                                 control={
                                     <Checkbox
                                         checked={selectedItem?.is_smart_tv || false}
-                                        onChange={(e) => setSelectedItem(prev => prev ? { ...prev, is_smart_tv: e.target.checked } : null)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedItem(prev => prev ? { ...prev, is_smart_tv: e.target.checked } : null)}
                                         disabled={saving}
                                     />
                                 }
@@ -444,8 +565,9 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                     <FormControlLabel
                         control={
                             <Checkbox
+                                sx={{ color: 'rgba(255,255,255,0.7)' }}
                                 checked={formData.is_smart_tv}
-                                onChange={(e) => setFormData({ ...formData, is_smart_tv: e.target.checked })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, is_smart_tv: e.target.checked })}
                             />
                         }
                         label="¿Es Smart TV?"
