@@ -40,6 +40,7 @@ export const FloatingNav: React.FC = () => {
             color: 'info' as const,
             actions: [
                 { icon: <RouterIcon />, name: 'Ver Equipos', path: '/equipment', color: 'info' as const },
+                { icon: <ListAltIcon />, name: 'Inventario', path: '/inventory', color: 'primary' as const },
             ]
         },
         {

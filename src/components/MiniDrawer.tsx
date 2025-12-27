@@ -91,7 +91,8 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [open, setOpen] = useState(!isMobile); // Default open on desktop, closed on mobile
-    const [openGestor, setOpenGestor] = useState(true);
+    const [openGestor, setOpenGestor] = useState(false);
+    const [openEquipement, setOpenEquipment] = useState(false);
     const location = useLocation();
 
     // Update open state when screen size changes
@@ -111,8 +112,21 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
         if (!open) {
             setOpen(true);
             setOpenGestor(true);
+            setOpenEquipment(false);
         } else {
             setOpenGestor(!openGestor);
+            if (!openGestor) setOpenEquipment(false);
+        }
+    };
+
+    const handleEquipmentClick = () => {
+        if (!open) {
+            setOpen(true);
+            setOpenEquipment(true);
+            setOpenGestor(false);
+        } else {
+            setOpenEquipment(!openEquipement);
+            if (!openEquipement) setOpenGestor(false);
         }
     };
 
@@ -228,35 +242,99 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
 
                     {/* Gestión de Equipos Item */}
                     <ListItem disablePadding sx={{ display: 'block' }}>
-                        <Tooltip title={!open ? "Gestión de Equipos" : ""} placement="right">
-                            <ListItemButton
-                                component={Link}
-                                to="/equipment"
-                                onClick={isMobile ? handleDrawerClose : undefined}
+                        <ListItemButton
+                            onClick={handleEquipmentClick}
+                            sx={{
+                                minHeight: 48,
+                                justifyContent: open ? 'initial' : 'center',
+                                px: 2.5,
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                }
+                            }}
+                        >
+                            <ListItemIcon
                                 sx={{
-                                    minHeight: 48,
-                                    justifyContent: open ? 'initial' : 'center',
-                                    px: 2.5,
-                                    backgroundColor: location.pathname === '/equipment' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                    }
+                                    minWidth: 0,
+                                    mr: open ? 3 : 'auto',
+                                    justifyContent: 'center',
+                                    color: 'white'
                                 }}
                             >
-                                <ListItemIcon
-                                    sx={{
-                                        minWidth: 0,
-                                        mr: open ? 3 : 'auto',
-                                        justifyContent: 'center',
-                                        color: 'white'
-                                    }}
-                                >
-                                    <RouterIcon />
-                                </ListItemIcon>
-                                <ListItemText primary="Gestión de Equipos" sx={{ opacity: open ? 1 : 0 }} />
-                            </ListItemButton>
-                        </Tooltip>
+                                <RouterIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Gestión de Equipos" sx={{ opacity: open ? 1 : 0 }} />
+                            {open ? (openEquipement ? <ExpandLess /> : <ExpandMore />) : null}
+                        </ListItemButton>
                     </ListItem>
+
+                    {/* Equipment Sub Items */}
+                    <Collapse in={open && openEquipement} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>
+                            <ListItem disablePadding sx={{ display: 'block' }}>
+                                <Tooltip title={!open ? "Ver Equipos" : ""} placement="right">
+                                    <ListItemButton
+                                        component={Link}
+                                        to="/equipment"
+                                        onClick={isMobile ? handleDrawerClose : undefined}
+                                        sx={{
+                                            minHeight: 48,
+                                            justifyContent: open ? 'initial' : 'center',
+                                            px: 2.5,
+                                            pl: open ? 4 : 2.5,
+                                            backgroundColor: location.pathname === '/equipment' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            }
+                                        }}
+                                    >
+                                        <ListItemIcon
+                                            sx={{
+                                                minWidth: 0,
+                                                mr: open ? 3 : 'auto',
+                                                justifyContent: 'center',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            <RouterIcon />
+                                        </ListItemIcon>
+                                        <ListItemText primary="Ver Equipos" sx={{ opacity: open ? 1 : 0 }} />
+                                    </ListItemButton>
+                                </Tooltip>
+                            </ListItem>
+                            <ListItem disablePadding sx={{ display: 'block' }}>
+                                <Tooltip title={!open ? "Inventario" : ""} placement="right">
+                                    <ListItemButton
+                                        component={Link}
+                                        to="/inventory"
+                                        onClick={isMobile ? handleDrawerClose : undefined}
+                                        sx={{
+                                            minHeight: 48,
+                                            justifyContent: open ? 'initial' : 'center',
+                                            px: 2.5,
+                                            pl: open ? 4 : 2.5,
+                                            backgroundColor: location.pathname === '/inventory' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            }
+                                        }}
+                                    >
+                                        <ListItemIcon
+                                            sx={{
+                                                minWidth: 0,
+                                                mr: open ? 3 : 'auto',
+                                                justifyContent: 'center',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            <ListAltIcon />
+                                        </ListItemIcon>
+                                        <ListItemText primary="Inventario" sx={{ opacity: open ? 1 : 0 }} />
+                                    </ListItemButton>
+                                </Tooltip>
+                            </ListItem>
+                        </List>
+                    </Collapse>
 
                     {/* Soporte Técnico Item */}
                     <ListItem disablePadding sx={{ display: 'block' }}>
