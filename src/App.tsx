@@ -12,6 +12,7 @@ import { AccountCardsScreen } from './components/AccountCardsScreen';
 import { Dashboard } from './components/Dashboard';
 import { Reports } from './components/Reports';
 import { EquipmentManagement } from './components/EquipmentManagement';
+import InventoryManagement from './components/InventoryManagement';
 import { TechnicalSupport } from './components/TechnicalSupport';
 import MiniDrawer from './components/MiniDrawer';
 import { FloatingNav } from './components/FloatingNav';
@@ -64,6 +65,12 @@ function App() {
           <Route
             path="/equipment"
             element={<EquipmentManagement />}
+          />
+
+          {/* Inventario de Equipos */}
+          <Route
+            path="/inventory"
+            element={<InventoryManagement />}
           />
 
           {/* Soporte Técnico */}
