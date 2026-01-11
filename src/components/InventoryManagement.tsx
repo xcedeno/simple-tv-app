@@ -4,8 +4,9 @@ import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     TextField, InputAdornment, TablePagination,
     Button, Chip, FormControlLabel, Checkbox, MenuItem, Stack, Grid,
-    Card, CardActionArea,
-    Dialog, DialogTitle, DialogContent, DialogActions, IconButton
+    Card, CardActionArea, CardContent, CardActions, Divider,
+    Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
+    useTheme, useMediaQuery
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SearchIcon from '@mui/icons-material/Search';
@@ -19,6 +20,7 @@ import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import * as XLSX from 'xlsx';
 import { supabase } from '../supabaseClient';
 
@@ -96,6 +98,8 @@ const InventoryDashboard: React.FC<{ items: InventoryItem[] }> = ({ items }) => 
 
 // --- Subcomponent: InventoryTable ---
 const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => void }> = ({ items, onUpdate }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
     const [page, setPage] = useState(0);
@@ -194,6 +198,66 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
         return <DevicesOtherIcon {...iconProps} />;
     };
 
+    // Mobile Card Component
+    const InventoryCard = ({ item }: { item: InventoryItem }) => (
+        <Card sx={{ mb: 2, borderRadius: '16px', boxShadow: 3 }}>
+            <CardContent sx={{ pb: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="h6" fontWeight="bold" color="primary">
+                        Hab. {item.room_number}
+                    </Typography>
+                    <Chip
+                        label={item.asset_number || "SIN ACTIVO"}
+                        size="small"
+                        color={item.asset_number ? "default" : "warning"}
+                        variant="outlined"
+                    />
+                </Box>
+                <Divider sx={{ mb: 1.5 }} />
+
+                <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {getEquipmentIcon(item.equipment_type)}
+                        <Typography variant="body1" fontWeight="500">{item.equipment_type}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                        <strong>Modelo:</strong> {item.model || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                        <strong>Serial:</strong> {item.serial_number || 'N/A'}
+                    </Typography>
+                    {item.equipment_type.toLowerCase().includes('televisor') && (
+                        <Box sx={{ mt: 0.5 }}>
+                            <Chip
+                                label={item.is_smart_tv ? "Smart TV" : "TV Normal"}
+                                size="small"
+                                color={item.is_smart_tv ? "success" : "default"}
+                                sx={{ height: 24 }}
+                            />
+                        </Box>
+                    )}
+                </Stack>
+            </CardContent>
+            <CardActions sx={{ justifyContent: 'flex-end', borderTop: '1px solid #eee', p: 1 }}>
+                <Button
+                    size="small"
+                    startIcon={<EditIcon />}
+                    onClick={() => handleEdit(item)}
+                >
+                    Editar
+                </Button>
+                <Button
+                    size="small"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => handleDeleteClick(item)}
+                >
+                    Eliminar
+                </Button>
+            </CardActions>
+        </Card>
+    );
+
     return (
         <Box>
             <InventoryDashboard items={items} />
@@ -244,7 +308,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
             </Grid>
 
             <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: { xs: '100%', md: 'auto' } }}>
                     <TextField
                         placeholder="Buscar por habitación, modelo o serial..."
                         variant="outlined" size="small" value={searchTerm}
@@ -256,7 +320,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                             ),
                         }}
                     />
-                    {typeFilter && (
+                    {typeFilter && !isMobile && (
                         <Chip
                             label={`Filtrado por: ${typeFilter}`}
                             onDelete={() => setTypeFilter(null)}
@@ -265,77 +329,116 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                         />
                     )}
                 </Box>
+
+                {typeFilter && isMobile && (
+                    <Chip
+                        label={`Filtro: ${typeFilter}`}
+                        onDelete={() => setTypeFilter(null)}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ width: '100%' }}
+                    />
+                )}
+
                 <Typography variant="body2" color="textSecondary">Resultados: {filteredItems.length} equipos</Typography>
             </Box>
 
-            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #eee', borderRadius: '15px', overflow: 'hidden' }}>
-                <Table sx={{ minWidth: 650 }}>
-                    <TableHead sx={{ bgcolor: '#f1f3f4' }}>
-                        <TableRow>
-                            <TableCell><strong>ITEM</strong></TableCell>
-                            <TableCell><strong>HABITACIÓN</strong></TableCell>
-                            <TableCell><strong>TIPO</strong></TableCell>
-                            <TableCell><strong>MODELO</strong></TableCell>
-                            <TableCell><strong>SERIAL</strong></TableCell>
-                            <TableCell><strong>ACTIVO</strong></TableCell>
-                            <TableCell align="center"><strong>SMART</strong></TableCell>
-                            <TableCell align="center"><strong>ACCIONES</strong></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filteredItems.length === 0 ? (
+            {!isMobile ? (
+                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #eee', borderRadius: '15px', overflow: 'hidden' }}>
+                    <Table sx={{ minWidth: 650 }}>
+                        <TableHead sx={{ bgcolor: '#f1f3f4' }}>
                             <TableRow>
-                                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                                    <Box sx={{ opacity: 0.5 }}>
-                                        <SearchIcon sx={{ fontSize: 40, mb: 1 }} />
-                                        <Typography>No se encontraron equipos en esta categoría</Typography>
-                                    </Box>
-                                </TableCell>
+                                <TableCell><strong>ITEM</strong></TableCell>
+                                <TableCell><strong>HABITACIÓN</strong></TableCell>
+                                <TableCell><strong>TIPO</strong></TableCell>
+                                <TableCell><strong>MODELO</strong></TableCell>
+                                <TableCell><strong>SERIAL</strong></TableCell>
+                                <TableCell><strong>ACTIVO</strong></TableCell>
+                                <TableCell align="center"><strong>SMART</strong></TableCell>
+                                <TableCell align="center"><strong>ACCIONES</strong></TableCell>
                             </TableRow>
-                        ) : (
-                            filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
-                                <TableRow key={item.id || index} hover>
-                                    <TableCell>{item.item_number}</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }}>{item.room_number}</TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            {getEquipmentIcon(item.equipment_type)} {item.equipment_type}
+                        </TableHead>
+                        <TableBody>
+                            {filteredItems.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                                        <Box sx={{ opacity: 0.5 }}>
+                                            <SearchIcon sx={{ fontSize: 40, mb: 1 }} />
+                                            <Typography>No se encontraron equipos en esta categoría</Typography>
                                         </Box>
                                     </TableCell>
-                                    <TableCell>{item.model || '-'}</TableCell>
-                                    <TableCell sx={{ fontFamily: 'monospace' }}>{item.serial_number || '-'}</TableCell>
-                                    <TableCell>
-                                        <Chip label={item.asset_number || 'SIN ACT'} size="small" color={item.asset_number ? "default" : "warning"} variant="outlined" />
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        {item.equipment_type.toLowerCase().includes('televisor') && (
-                                            <Chip
-                                                label={item.is_smart_tv ? "SI" : "NO"} size="small"
-                                                color={item.is_smart_tv ? "success" : "default"}
-                                            />
-                                        )}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <IconButton size="small" color="primary" onClick={() => handleEdit(item)}>
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" color="error" onClick={() => handleDeleteClick(item)}>
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-                <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]} component="div"
-                    count={filteredItems.length} rowsPerPage={rowsPerPage} page={page}
-                    onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage}
-                    labelRowsPerPage="Filas por página:"
-                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-                />
-            </TableContainer>
+                            ) : (
+                                filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
+                                    <TableRow key={item.id || index} hover>
+                                        <TableCell>{item.item_number}</TableCell>
+                                        <TableCell sx={{ fontWeight: 800 }}>{item.room_number}</TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {getEquipmentIcon(item.equipment_type)} {item.equipment_type}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>{item.model || '-'}</TableCell>
+                                        <TableCell sx={{ fontFamily: 'monospace' }}>{item.serial_number || '-'}</TableCell>
+                                        <TableCell>
+                                            <Chip label={item.asset_number || 'SIN ACT'} size="small" color={item.asset_number ? "default" : "warning"} variant="outlined" />
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            {item.equipment_type.toLowerCase().includes('televisor') && (
+                                                <Chip
+                                                    label={item.is_smart_tv ? "SI" : "NO"} size="small"
+                                                    color={item.is_smart_tv ? "success" : "default"}
+                                                />
+                                            )}
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <IconButton size="small" color="primary" onClick={() => handleEdit(item)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(item)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]} component="div"
+                        count={filteredItems.length} rowsPerPage={rowsPerPage} page={page}
+                        onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage}
+                        labelRowsPerPage="Filas por página:"
+                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+                    />
+                </TableContainer>
+            ) : (
+                <Box>
+                    {filteredItems.length === 0 ? (
+                        <Box sx={{ opacity: 0.5, textAlign: 'center', py: 4 }}>
+                            <SearchIcon sx={{ fontSize: 40, mb: 1 }} />
+                            <Typography>No se encontraron equipos</Typography>
+                        </Box>
+                    ) : (
+                        <Box>
+                            {filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
+                                <InventoryCard key={item.id || index} item={item} />
+                            ))}
+                            <TablePagination
+                                rowsPerPageOptions={[5, 10, 25]}
+                                component="div"
+                                count={filteredItems.length}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage="Filas:"
+                            />
+                        </Box>
+                    )}
+                </Box>
+            )}
 
             {/* Dialog de Edición */}
             <Dialog open={editDialogOpen} onClose={() => !saving && setEditDialogOpen(false)} maxWidth="sm" fullWidth>
@@ -495,7 +598,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
 
             <Stack spacing={3}>
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: { xs: '100%', sm: '250px' } }}>
                         <TextField
                             fullWidth
                             label="Número de Habitación *"
@@ -505,7 +608,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                         />
                     </Box>
 
-                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: { xs: '100%', sm: '250px' } }}>
                         <TextField
                             fullWidth
                             select
@@ -521,7 +624,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: { xs: '100%', sm: '250px' } }}>
                         <TextField
                             fullWidth
                             label="Modelo"
@@ -530,7 +633,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                         />
                     </Box>
 
-                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: { xs: '100%', sm: '250px' } }}>
                         <TextField
                             fullWidth
                             label="Número de Serial"
@@ -541,7 +644,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: { xs: '100%', sm: '250px' } }}>
                         <TextField
                             fullWidth
                             label="Número de Activo"
@@ -550,7 +653,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                         />
                     </Box>
 
-                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: { xs: '100%', sm: '250px' } }}>
                         <TextField
                             fullWidth
                             type="number"
@@ -808,6 +911,9 @@ const InventoryUploadForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
 
 // --- Main Component ---
 const InventoryManagement: React.FC = () => {
+    const theme = useTheme();
+    // Extend mobile view to include tablets (screens < 900px, e.g. iPad Portrait)
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [tabValue, setTabValue] = useState(0);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -833,15 +939,42 @@ const InventoryManagement: React.FC = () => {
     };
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 800, color: '#1a237e' }}>Inventario de Equipos</Typography>
+        <Box sx={{ p: isMobile ? 1 : 3 }}>
+            <Typography variant={isMobile ? "h5" : "h4"} sx={{ mb: 4, fontWeight: 800, color: '#1a237e' }}>
+                Inventario de Equipos
+            </Typography>
             <Paper sx={{ borderRadius: '20px', overflow: 'hidden' }}>
-                <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)} variant="fullWidth">
-                    <Tab label="Ver Inventario" />
-                    <Tab label="Agregar Manualmente" icon={<AddIcon />} iconPosition="start" />
-                    <Tab label="Cargar Excel" icon={<CloudUploadIcon />} iconPosition="start" />
+                <Tabs
+                    value={tabValue}
+                    onChange={(_, val) => setTabValue(val)}
+                    variant="fullWidth"
+                    sx={{
+                        '& .MuiTab-root': {
+                            minHeight: isMobile ? '64px' : '48px', // Taller touch targets on mobile
+                            fontSize: isMobile ? '0.7rem' : '0.875rem'
+                        }
+                    }}
+                >
+                    <Tab
+                        label={isMobile ? undefined : "Ver Inventario"}
+                        icon={<ListAltIcon />}
+                        iconPosition={isMobile ? "top" : "start"}
+                        aria-label="Ver Inventario"
+                    />
+                    <Tab
+                        label={isMobile ? undefined : "Agregar Manualmente"}
+                        icon={<AddIcon />}
+                        iconPosition={isMobile ? "top" : "start"}
+                        aria-label="Agregar Manualmente"
+                    />
+                    <Tab
+                        label={isMobile ? undefined : "Cargar Excel"}
+                        icon={<CloudUploadIcon />}
+                        iconPosition={isMobile ? "top" : "start"}
+                        aria-label="Cargar Excel"
+                    />
                 </Tabs>
-                <Box sx={{ p: 3 }}>
+                <Box sx={{ p: isMobile ? 2 : 3 }}>
                     {tabValue === 0 && (loading ? <CircularProgress /> : <InventoryTableDisplay items={inventory} onUpdate={fetchInventory} />)}
                     {tabValue === 1 && <ManualEntryForm onSuccess={handleSuccess} />}
                     {tabValue === 2 && <InventoryUploadForm onSuccess={handleSuccess} />}
