@@ -47,56 +47,10 @@ const generateUUID = () => {
     });
 };
 
-// --- Subcomponent: InventoryDashboard ---
-const InventoryDashboard: React.FC<{ items: InventoryItem[] }> = ({ items }) => {
-    const stats = {
-        total: items.length,
-        tvs: items.filter(i => i.equipment_type === 'TELEVISOR').length,
-        neveras: items.filter(i => i.equipment_type === 'NEVERA').length,
-        otros: items.filter(i => !['TELEVISOR', 'NEVERA'].includes(i.equipment_type)).length,
-        smartTv: items.filter(i => i.is_smart_tv).length
-    };
-
-    const dashboardCards = [
-        { label: 'Total Equipos', value: stats.total, color: '#1a237e', icon: <DevicesOtherIcon sx={{ fontSize: 40 }} /> },
-        { label: 'Televisores', value: stats.tvs, color: '#2ed573', icon: <TvIcon sx={{ fontSize: 40 }} /> },
-        { label: 'Neveras', value: stats.neveras, color: '#ffa502', icon: <KitchenIcon sx={{ fontSize: 40 }} /> },
-        { label: 'Smart TVs', value: stats.smartTv, color: '#5352ed', icon: <TvIcon sx={{ fontSize: 40 }} /> },
-    ];
-
-    return (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-            {dashboardCards.map((card, idx) => (
-                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 3,
-                            borderRadius: '20px',
-                            background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}cc 100%)`,
-                            color: 'white',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': { transform: 'translateY(-5px)' }
-                        }}
-                    >
-                        <Box>
-                            <Typography variant="body2" sx={{ opacity: 0.8, fontWeight: 600 }}>{card.label}</Typography>
-                            <Typography variant="h3" sx={{ fontWeight: 800 }}>{card.value}</Typography>
-                        </Box>
-                        <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', p: 1, borderRadius: '12px' }}>
-                            {card.icon}
-                        </Box>
-                    </Paper>
-                </Grid>
-            ))}
-        </Grid>
-    );
-};
-
 // --- Subcomponent: InventoryTable ---
+
+
+
 const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => void }> = ({ items, onUpdate }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -260,7 +214,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
 
     return (
         <Box>
-            <InventoryDashboard items={items} />
+
 
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#1a237e' }}>Explorar por Categoría</Typography>
 
