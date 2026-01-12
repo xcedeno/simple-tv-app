@@ -349,7 +349,7 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
         <>
             <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
                 <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">Generar Solicitud de Cheque</Typography>
+                    <Typography variant="h6" component="div">Generar Solicitud de Cheque</Typography>
                     {exchangeRate > 0 && (
                         <Chip
                             icon={<CurrencyExchange />}
@@ -378,23 +378,23 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
                         </FormControl>
                     </Box>
 
-                    <Box mb={3} display="flex" gap={2} alignItems="flex-start" flexWrap="wrap">
+                    <Box mb={3} display="flex" gap={2} alignItems="flex-start" flexWrap="wrap" flexDirection={{ xs: 'column', sm: 'row' }}>
                         <Autocomplete
                             options={accounts}
                             getOptionLabel={(option) => option.alias || option.email}
                             value={selectedAccount}
                             onChange={(_, newValue) => setSelectedAccount(newValue)}
                             renderInput={(params) => <TextField {...params} label="Seleccionar Cuenta" />}
-                            sx={{ flexGrow: 1, minWidth: '250px' }}
+                            sx={{ flexGrow: 1, minWidth: { xs: '100%', sm: '250px' } }}
                         />
 
-                        <Box display="flex" flexDirection="column" gap={1}>
+                        <Box display="flex" flexDirection="column" gap={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                             <TextField
                                 label={useUSDInput ? "Monto ($ USD)" : `Monto (${checkCurrency === 'VES' ? 'Bs' : '$'})`}
                                 type="number"
                                 value={inputAmount}
                                 onChange={(e) => setInputAmount(e.target.value)}
-                                sx={{ width: '150px' }}
+                                sx={{ width: { xs: '100%', sm: '150px' } }}
                                 InputProps={{
                                     startAdornment: <InputAdornment position="start">{useUSDInput || checkCurrency === 'USD' ? '$' : 'Bs'}</InputAdornment>,
                                 }}
@@ -422,7 +422,7 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
                             variant="contained"
                             onClick={handleAddItem}
                             disabled={!selectedAccount || !inputAmount}
-                            sx={{ mt: 1 }}
+                            sx={{ mt: { xs: 0, sm: 1 }, width: { xs: '100%', sm: 'auto' }, height: '56px' }}
                         >
                             Agregar
                         </Button>
@@ -468,25 +468,28 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
                     </TableContainer>
 
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={onClose}>Cancelar</Button>
-                    <Button
-                        variant="outlined"
-                        onClick={() => generatePDF('preview')}
-                        disabled={requestItems.length === 0 || loadingRate}
-                        sx={{ mr: 1 }}
-                    >
-                        Vista Previa
-                    </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={loadingRate ? <CircularProgress size={20} color="inherit" /> : <PictureAsPdf />}
-                        onClick={() => generatePDF('download')}
-                        disabled={requestItems.length === 0 || loadingRate}
-                        color="primary"
-                    >
-                        Descargar PDF
-                    </Button>
+                <DialogActions sx={{ flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1, p: 2 }}>
+                    <Button onClick={onClose} sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancelar</Button>
+                    <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => generatePDF('preview')}
+                            disabled={requestItems.length === 0 || loadingRate}
+                            sx={{ width: { xs: '100%', sm: 'auto' } }}
+                        >
+                            Vista Previa
+                        </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={loadingRate ? <CircularProgress size={20} color="inherit" /> : <PictureAsPdf />}
+                            onClick={() => generatePDF('download')}
+                            disabled={requestItems.length === 0 || loadingRate}
+                            color="primary"
+                            sx={{ width: { xs: '100%', sm: 'auto' } }}
+                        >
+                            Descargar PDF
+                        </Button>
+                    </Box>
                 </DialogActions>
             </Dialog>
 
