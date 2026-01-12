@@ -198,13 +198,17 @@ export const ReportPreviewModal: React.FC<ReportPreviewModalProps> = ({ open, on
                     </Table>
                 </TableContainer>
             </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-                <Button onClick={onClose} color="inherit">Cancelar</Button>
+            <DialogActions sx={{ p: 2, flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1 }}>
+                <Button onClick={onClose} color="inherit" sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancelar</Button>
                 <Button
                     onClick={handleDownloadPDF}
                     variant="contained"
                     startIcon={<Download />}
-                    sx={{ bgcolor: '#1a237e', '&:hover': { bgcolor: '#0d47a1' } }}
+                    sx={{
+                        width: { xs: '100%', sm: 'auto' },
+                        bgcolor: '#1a237e',
+                        '&:hover': { bgcolor: '#0d47a1' }
+                    }}
                 >
                     Descargar PDF
                 </Button>
