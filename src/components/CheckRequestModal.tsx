@@ -122,8 +122,30 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    const generatePDF = (action: 'download' | 'preview') => {
+    const generatePDF = async (action: 'download' | 'preview') => {
         const doc = new jsPDF();
+
+        // Helper to load image
+        const loadImage = (url: string): Promise<HTMLImageElement> => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+            });
+        };
+
+        try {
+            // Load Logo
+            const logoImg = await loadImage('/hotel-ikin.jpg');
+            // Add Logo (Top-Left) - Adjust dimensions as needed
+            // x=10, y=10, w=30, h=30 (approx square, or adjust to aspect ratio)
+            const logoWidth = 35;
+            const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+            doc.addImage(logoImg, 'JPEG', 10, 5, logoWidth, logoHeight);
+        } catch (e) {
+            console.warn("Could not load logo:", e);
+        }
 
         // -- Header --
         // Top Logo Area (Placeholder)
