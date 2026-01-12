@@ -32,6 +32,7 @@ import { PictureAsPdf, CurrencyExchange } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
+import logoUrl from '../assets/hotel-ikin.jpg';
 
 interface Account {
     id: string;
@@ -136,10 +137,9 @@ export const CheckRequestModal: React.FC<CheckRequestModalProps> = ({ open, onCl
         };
 
         try {
-            // Load Logo
-            const logoImg = await loadImage('/hotel-ikin.jpg');
-            // Add Logo (Top-Left) - Adjust dimensions as needed
-            // x=10, y=10, w=30, h=30 (approx square, or adjust to aspect ratio)
+            // Load Logo using the imported URL
+            const logoImg = await loadImage(logoUrl);
+            // Add Logo (Top-Left)
             const logoWidth = 35;
             const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
             doc.addImage(logoImg, 'JPEG', 10, 5, logoWidth, logoHeight);
