@@ -16,6 +16,7 @@ import InventoryManagement from './components/InventoryManagement';
 import { TechnicalSupport } from './components/TechnicalSupport';
 import MiniDrawer from './components/MiniDrawer';
 import { FloatingNav } from './components/FloatingNav';
+import { ColorModeProvider } from './context/ThemeContext';
 
 function App() {
   const [refresh, setRefresh] = React.useState(false);
@@ -26,61 +27,63 @@ function App() {
   };
 
   return (
-    <Router>
-      <MiniDrawer>
-        <FloatingNav />
-        <Routes>
-          {/* Dashboard */}
-          {/* Dashboard (Principal) */}
-          <Route
-            path="/"
-            element={<Dashboard />}
-          />
+    <ColorModeProvider>
+      <Router>
+        <MiniDrawer>
+          <FloatingNav />
+          <Routes>
+            {/* Dashboard */}
+            {/* Dashboard (Principal) */}
+            <Route
+              path="/"
+              element={<Dashboard />}
+            />
 
-          {/* Formulario de Cuentas */}
-          <Route
-            path="/form"
-            element={<AccountForm onSaved={handleSaved} />}
-          />
+            {/* Formulario de Cuentas */}
+            <Route
+              path="/form"
+              element={<AccountForm onSaved={handleSaved} />}
+            />
 
-          {/* Página de Lista de Cuentas */}
-          <Route
-            path="/list"
-            element={<AccountList refresh={refresh} />}
-          />
+            {/* Página de Lista de Cuentas */}
+            <Route
+              path="/list"
+              element={<AccountList refresh={refresh} />}
+            />
 
-          {/* Página de Tarjetas de Cuentas */}
-          <Route
-            path="/cards"
-            element={<AccountCardsScreen />}
-          />
+            {/* Página de Tarjetas de Cuentas */}
+            <Route
+              path="/cards"
+              element={<AccountCardsScreen />}
+            />
 
-          {/* Página de Reportes */}
-          <Route
-            path="/reports"
-            element={<Reports />}
-          />
+            {/* Página de Reportes */}
+            <Route
+              path="/reports"
+              element={<Reports />}
+            />
 
-          {/* Gestión de Equipos */}
-          <Route
-            path="/equipment"
-            element={<EquipmentManagement />}
-          />
+            {/* Gestión de Equipos */}
+            <Route
+              path="/equipment"
+              element={<EquipmentManagement />}
+            />
 
-          {/* Inventario de Equipos */}
-          <Route
-            path="/inventory"
-            element={<InventoryManagement />}
-          />
+            {/* Inventario de Equipos */}
+            <Route
+              path="/inventory"
+              element={<InventoryManagement />}
+            />
 
-          {/* Soporte Técnico */}
-          <Route
-            path="/support"
-            element={<TechnicalSupport />}
-          />
-        </Routes>
-      </MiniDrawer>
-    </Router>
+            {/* Soporte Técnico */}
+            <Route
+              path="/support"
+              element={<TechnicalSupport />}
+            />
+          </Routes>
+        </MiniDrawer>
+      </Router>
+    </ColorModeProvider>
   );
 }
 

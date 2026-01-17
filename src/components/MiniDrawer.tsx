@@ -25,10 +25,13 @@ import Collapse from '@mui/material/Collapse';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import RouterIcon from '@mui/icons-material/Router';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { Link, useLocation } from 'react-router-dom';
-import { Tooltip } from '@mui/material';
+import { Tooltip, Typography } from '@mui/material';
+import { useColorMode } from '../context/ThemeContext';
 
-const drawerWidth = 240;
+const drawerWidth = 260; // Slightly wider for better breathing room
 
 const openedMixin = (theme: Theme): CSSObject => ({
     width: drawerWidth,
@@ -37,8 +40,10 @@ const openedMixin = (theme: Theme): CSSObject => ({
         duration: theme.transitions.duration.enteringScreen,
     }),
     overflowX: 'hidden',
-    backgroundColor: '#1a237e', // Primary color from App.tsx
-    color: '#ffffff',
+    borderRight: 'none',
+    boxShadow: theme.palette.mode === 'dark'
+        ? '5px 0 15px rgba(0,0,0,0.5)'
+        : '5px 0 15px rgba(0,0,0,0.05)',
 });
 
 const closedMixin = (theme: Theme): CSSObject => ({
@@ -51,15 +56,17 @@ const closedMixin = (theme: Theme): CSSObject => ({
     [theme.breakpoints.up('sm')]: {
         width: `calc(${theme.spacing(8)} + 1px)`,
     },
-    backgroundColor: '#1a237e', // Primary color from App.tsx
-    color: '#ffffff',
+    borderRight: 'none',
+    boxShadow: theme.palette.mode === 'dark'
+        ? '5px 0 15px rgba(0,0,0,0.5)'
+        : '5px 0 15px rgba(0,0,0,0.05)',
 });
 
 const DrawerHeader = styled('div')(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    padding: theme.spacing(0, 1),
+    justifyContent: 'space-between', // Changed to space-between to accommodate logo/text if added
+    padding: theme.spacing(0, 2),
     // necessary for content to be below app bar
     ...theme.mixins.toolbar,
 }));
@@ -72,41 +79,40 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
         boxSizing: 'border-box',
         ...(open && {
             ...openedMixin(theme),
-            '& .MuiDrawer-paper': openedMixin(theme),
+            '& .MuiDrawer-paper': {
+                ...openedMixin(theme),
+                backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+                // Optional: Add a subtle gradient or pattern in dark mode
+                ...(theme.palette.mode === 'dark' && {
+                    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0))',
+                }),
+            },
         }),
         ...(!open && !isMobile && {
             ...closedMixin(theme),
-            '& .MuiDrawer-paper': closedMixin(theme),
-        }),
-        ...(!open && isMobile && {
-            // On mobile, when closed, we don't want the closedMixin (mini strip). 
-            // We want it to be hidden (handled by variant="temporary"), so we avoid setting width.
-            // However, to be safe, we can set width to 0 or rely on MUI.
-            // MUI temporary drawer handles visibility via transform.
+            '& .MuiDrawer-paper': {
+                ...closedMixin(theme),
+                backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+            },
         }),
     }),
 );
 
 export default function MiniDrawer({ children }: { children: React.ReactNode }) {
     const theme = useTheme();
+    const { toggleColorMode, mode } = useColorMode();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const [open, setOpen] = useState(!isMobile); // Default open on desktop, closed on mobile
+    const [open, setOpen] = useState(!isMobile);
     const [openGestor, setOpenGestor] = useState(false);
     const [openEquipement, setOpenEquipment] = useState(false);
     const location = useLocation();
 
-    // Update open state when screen size changes
     React.useEffect(() => {
         setOpen(!isMobile);
     }, [isMobile]);
 
-    const handleDrawerOpen = () => {
-        setOpen(true);
-    };
-
-    const handleDrawerClose = () => {
-        setOpen(false);
-    };
+    const handleDrawerOpen = () => setOpen(true);
+    const handleDrawerClose = () => setOpen(false);
 
     const handleGestorClick = () => {
         if (!open) {
@@ -138,6 +144,46 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
         { text: 'Reportes', icon: <AssessmentIcon />, path: '/reports' },
     ];
 
+    // Helper to determine if an item is active
+    const isActive = (path: string) => location.pathname === path;
+
+    // Common ListItemButton styling
+    const getListItemStyles = (active: boolean) => ({
+        minHeight: 48,
+        justifyContent: open ? 'initial' : 'center',
+        px: 2.5,
+        my: 0.5, // Add vertical spacing
+        mx: 1,   // Add horizontal spacing for "floating" look
+        borderRadius: 2,
+        transition: 'all 0.2s',
+        position: 'relative',
+        color: active ? theme.palette.primary.main : theme.palette.text.primary,
+        backgroundColor: active
+            ? (theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.08)')
+            : 'transparent',
+        '&:hover': {
+            backgroundColor: active
+                ? (theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.25)' : 'rgba(37, 99, 235, 0.15)')
+                : theme.palette.action.hover,
+            transform: 'translateX(3px)',
+        },
+        // Active indicator strip
+        ...(active && {
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: -8, // Outside the border radius
+                top: '50%',
+                transform: 'translateY(-50%)',
+                height: '60%',
+                width: 4,
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: '0 4px 4px 0',
+                display: open ? 'block' : 'none',
+            }
+        })
+    });
+
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
@@ -146,54 +192,59 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                 open={open}
                 isMobile={isMobile}
                 onClose={isMobile ? handleDrawerClose : undefined}
-                ModalProps={{
-                    keepMounted: true, // Better open performance on mobile.
-                }}
+                ModalProps={{ keepMounted: true }}
                 sx={{
                     '& .MuiDrawer-paper': {
-                        width: isMobile ? drawerWidth : undefined, // Full width on mobile when open
-                        ...(isMobile ? {
-                            // Mobile styles handled by temporary variant mostly
-                        } : {
-                            // Desktop styles handled by mixins
-                        })
+                        width: isMobile ? drawerWidth : undefined,
                     }
                 }}
             >
                 <DrawerHeader>
-                    {open ? (
-                        <IconButton onClick={handleDrawerClose} sx={{ color: 'white' }}>
-                            {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-                        </IconButton>
-                    ) : (
-                        <IconButton onClick={handleDrawerOpen} sx={{ color: 'white', ml: 0.5 }}>
-                            <MenuIcon />
-                        </IconButton>
+                    {open && (
+                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', ml: 1, opacity: open ? 1 : 0, transition: 'opacity 0.3s' }}>
+                            Simple TV
+                        </Typography>
                     )}
+                    <IconButton onClick={open ? handleDrawerClose : handleDrawerOpen}>
+                        {/* Toggle Icon logic or just Menu/Chevron? Keeping original logic but improved */}
+                        {open ? (theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />) : <MenuIcon />}
+                    </IconButton>
                 </DrawerHeader>
-                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
+
+                <Divider sx={{ my: 1, borderColor: theme.palette.divider }} />
+
                 <List>
-                    {/* Gestor de Cuentas Item */}
+                    {/* Theme Toggle Item - Prominent */}
                     <ListItem disablePadding sx={{ display: 'block' }}>
-                        <ListItemButton
-                            onClick={handleGestorClick}
-                            sx={{
-                                minHeight: 48,
-                                justifyContent: open ? 'initial' : 'center',
-                                px: 2.5,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                }
-                            }}
-                        >
-                            <ListItemIcon
+                        <Tooltip title={open ? "Cambiar Tema" : (mode === 'dark' ? "Modo Claro" : "Modo Oscuro")} placement="right">
+                            <ListItemButton
+                                onClick={toggleColorMode}
                                 sx={{
-                                    minWidth: 0,
-                                    mr: open ? 3 : 'auto',
-                                    justifyContent: 'center',
-                                    color: 'white'
+                                    ...getListItemStyles(false),
+                                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                                 }}
                             >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: open ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                        color: theme.palette.text.secondary
+                                    }}
+                                >
+                                    {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                                </ListItemIcon>
+                                <ListItemText primary={mode === 'dark' ? "Modo Claro" : "Modo Oscuro"} sx={{ opacity: open ? 1 : 0 }} />
+                            </ListItemButton>
+                        </Tooltip>
+                    </ListItem>
+
+                    <Divider sx={{ my: 1, borderColor: theme.palette.divider }} />
+
+                    {/* Gestor de Cuentas */}
+                    <ListItem disablePadding sx={{ display: 'block' }}>
+                        <ListItemButton onClick={handleGestorClick} sx={getListItemStyles(openGestor)}>
+                            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: openGestor ? theme.palette.primary.main : theme.palette.text.secondary }}>
                                 <AccountCircleIcon />
                             </ListItemIcon>
                             <ListItemText primary="Gestor de Cuentas" sx={{ opacity: open ? 1 : 0 }} />
@@ -201,7 +252,6 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                         </ListItemButton>
                     </ListItem>
 
-                    {/* Sub Items */}
                     <Collapse in={open && openGestor} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
                             {menuItems.map((item) => (
@@ -210,26 +260,13 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                                         <ListItemButton
                                             component={Link}
                                             to={item.path}
-                                            onClick={isMobile ? handleDrawerClose : undefined} // Close drawer on navigation on mobile
+                                            onClick={isMobile ? handleDrawerClose : undefined}
                                             sx={{
-                                                minHeight: 48,
-                                                justifyContent: open ? 'initial' : 'center',
-                                                px: 2.5,
-                                                pl: open ? 4 : 2.5, // Indent if open
-                                                backgroundColor: location.pathname === item.path ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                                }
+                                                ...getListItemStyles(isActive(item.path)),
+                                                pl: open ? 4 : 2.5, // Reduced indent nesting visual for cleaner look
                                             }}
                                         >
-                                            <ListItemIcon
-                                                sx={{
-                                                    minWidth: 0,
-                                                    mr: open ? 3 : 'auto',
-                                                    justifyContent: 'center',
-                                                    color: 'white'
-                                                }}
-                                            >
+                                            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: isActive(item.path) ? theme.palette.primary.main : theme.palette.text.secondary }}>
                                                 {item.icon}
                                             </ListItemIcon>
                                             <ListItemText primary={item.text} sx={{ opacity: open ? 1 : 0 }} />
@@ -240,27 +277,10 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                         </List>
                     </Collapse>
 
-                    {/* Gestión de Equipos Item */}
+                    {/* Gestión de Equipos */}
                     <ListItem disablePadding sx={{ display: 'block' }}>
-                        <ListItemButton
-                            onClick={handleEquipmentClick}
-                            sx={{
-                                minHeight: 48,
-                                justifyContent: open ? 'initial' : 'center',
-                                px: 2.5,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                }
-                            }}
-                        >
-                            <ListItemIcon
-                                sx={{
-                                    minWidth: 0,
-                                    mr: open ? 3 : 'auto',
-                                    justifyContent: 'center',
-                                    color: 'white'
-                                }}
-                            >
+                        <ListItemButton onClick={handleEquipmentClick} sx={getListItemStyles(openEquipement)}>
+                            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: openEquipement ? theme.palette.primary.main : theme.palette.text.secondary }}>
                                 <RouterIcon />
                             </ListItemIcon>
                             <ListItemText primary="Gestión de Equipos" sx={{ opacity: open ? 1 : 0 }} />
@@ -268,99 +288,45 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                         </ListItemButton>
                     </ListItem>
 
-                    {/* Equipment Sub Items */}
                     <Collapse in={open && openEquipement} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
-                            <ListItem disablePadding sx={{ display: 'block' }}>
-                                <Tooltip title={!open ? "Ver Equipos" : ""} placement="right">
-                                    <ListItemButton
-                                        component={Link}
-                                        to="/equipment"
-                                        onClick={isMobile ? handleDrawerClose : undefined}
-                                        sx={{
-                                            minHeight: 48,
-                                            justifyContent: open ? 'initial' : 'center',
-                                            px: 2.5,
-                                            pl: open ? 4 : 2.5,
-                                            backgroundColor: location.pathname === '/equipment' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
-                                            '&:hover': {
-                                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                            }
-                                        }}
-                                    >
-                                        <ListItemIcon
+                            {/* Subitems for Equipment */}
+                            {[
+                                { text: 'Ver Equipos', path: '/equipment', icon: <RouterIcon /> },
+                                { text: 'Inventario', path: '/inventory', icon: <ListAltIcon /> }
+                            ].map((item) => (
+                                <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+                                    <Tooltip title={!open ? item.text : ""} placement="right">
+                                        <ListItemButton
+                                            component={Link}
+                                            to={item.path}
+                                            onClick={isMobile ? handleDrawerClose : undefined}
                                             sx={{
-                                                minWidth: 0,
-                                                mr: open ? 3 : 'auto',
-                                                justifyContent: 'center',
-                                                color: 'white'
+                                                ...getListItemStyles(isActive(item.path)),
+                                                pl: open ? 4 : 2.5,
                                             }}
                                         >
-                                            <RouterIcon />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Ver Equipos" sx={{ opacity: open ? 1 : 0 }} />
-                                    </ListItemButton>
-                                </Tooltip>
-                            </ListItem>
-                            <ListItem disablePadding sx={{ display: 'block' }}>
-                                <Tooltip title={!open ? "Inventario" : ""} placement="right">
-                                    <ListItemButton
-                                        component={Link}
-                                        to="/inventory"
-                                        onClick={isMobile ? handleDrawerClose : undefined}
-                                        sx={{
-                                            minHeight: 48,
-                                            justifyContent: open ? 'initial' : 'center',
-                                            px: 2.5,
-                                            pl: open ? 4 : 2.5,
-                                            backgroundColor: location.pathname === '/inventory' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
-                                            '&:hover': {
-                                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                            }
-                                        }}
-                                    >
-                                        <ListItemIcon
-                                            sx={{
-                                                minWidth: 0,
-                                                mr: open ? 3 : 'auto',
-                                                justifyContent: 'center',
-                                                color: 'white'
-                                            }}
-                                        >
-                                            <ListAltIcon />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Inventario" sx={{ opacity: open ? 1 : 0 }} />
-                                    </ListItemButton>
-                                </Tooltip>
-                            </ListItem>
+                                            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: isActive(item.path) ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                                                {item.icon}
+                                            </ListItemIcon>
+                                            <ListItemText primary={item.text} sx={{ opacity: open ? 1 : 0 }} />
+                                        </ListItemButton>
+                                    </Tooltip>
+                                </ListItem>
+                            ))}
                         </List>
                     </Collapse>
 
-                    {/* Soporte Técnico Item */}
+                    {/* Soporte Técnico */}
                     <ListItem disablePadding sx={{ display: 'block' }}>
                         <Tooltip title={!open ? "Soporte Técnico" : ""} placement="right">
                             <ListItemButton
                                 component={Link}
                                 to="/support"
                                 onClick={isMobile ? handleDrawerClose : undefined}
-                                sx={{
-                                    minHeight: 48,
-                                    justifyContent: open ? 'initial' : 'center',
-                                    px: 2.5,
-                                    backgroundColor: location.pathname === '/support' ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                    }
-                                }}
+                                sx={getListItemStyles(isActive('/support'))}
                             >
-                                <ListItemIcon
-                                    sx={{
-                                        minWidth: 0,
-                                        mr: open ? 3 : 'auto',
-                                        justifyContent: 'center',
-                                        color: 'white'
-                                    }}
-                                >
+                                <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: isActive('/support') ? theme.palette.primary.main : theme.palette.text.secondary }}>
                                     <SupportAgentIcon />
                                 </ListItemIcon>
                                 <ListItemText primary="Soporte Técnico" sx={{ opacity: open ? 1 : 0 }} />
@@ -368,10 +334,9 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
                         </Tooltip>
                     </ListItem>
 
-
                 </List>
             </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: 3, maxWidth: '100%', overflowX: 'auto', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, maxWidth: '100%', overflowX: 'auto', backgroundColor: theme.palette.background.default, minHeight: '100vh', transition: 'background-color 0.3s' }}>
                 {isMobile && (
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                         <IconButton
