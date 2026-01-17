@@ -18,6 +18,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import MenuIcon from '@mui/icons-material/Menu';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
@@ -105,6 +106,7 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
     const [open, setOpen] = useState(!isMobile);
     const [openGestor, setOpenGestor] = useState(false);
     const [openEquipement, setOpenEquipment] = useState(false);
+    const [openSupport, setOpenSupport] = useState(false);
     const location = useLocation();
 
     React.useEffect(() => {
@@ -119,9 +121,13 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
             setOpen(true);
             setOpenGestor(true);
             setOpenEquipment(false);
+            setOpenSupport(false);
         } else {
             setOpenGestor(!openGestor);
-            if (!openGestor) setOpenEquipment(false);
+            if (!openGestor) {
+                setOpenEquipment(false);
+                setOpenSupport(false);
+            }
         }
     };
 
@@ -130,9 +136,28 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
             setOpen(true);
             setOpenEquipment(true);
             setOpenGestor(false);
+            setOpenSupport(false);
         } else {
             setOpenEquipment(!openEquipement);
-            if (!openEquipement) setOpenGestor(false);
+            if (!openEquipement) {
+                setOpenGestor(false);
+                setOpenSupport(false);
+            }
+        }
+    };
+
+    const handleSupportClick = () => {
+        if (!open) {
+            setOpen(true);
+            setOpenSupport(true);
+            setOpenGestor(false);
+            setOpenEquipment(false);
+        } else {
+            setOpenSupport(!openSupport);
+            if (!openSupport) {
+                setOpenGestor(false);
+                setOpenEquipment(false);
+            }
         }
     };
 
@@ -319,20 +344,42 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
 
                     {/* Soporte Técnico */}
                     <ListItem disablePadding sx={{ display: 'block' }}>
-                        <Tooltip title={!open ? "Soporte Técnico" : ""} placement="right">
-                            <ListItemButton
-                                component={Link}
-                                to="/support"
-                                onClick={isMobile ? handleDrawerClose : undefined}
-                                sx={getListItemStyles(isActive('/support'))}
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: isActive('/support') ? theme.palette.primary.main : theme.palette.text.secondary }}>
-                                    <SupportAgentIcon />
-                                </ListItemIcon>
-                                <ListItemText primary="Soporte Técnico" sx={{ opacity: open ? 1 : 0 }} />
-                            </ListItemButton>
-                        </Tooltip>
+                        <ListItemButton onClick={handleSupportClick} sx={getListItemStyles(openSupport)}>
+                            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: openSupport ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                                <SupportAgentIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Soporte_Técnico" sx={{ opacity: open ? 1 : 0 }} />
+                            {open ? (openSupport ? <ExpandLess /> : <ExpandMore />) : null}
+                        </ListItemButton>
                     </ListItem>
+
+                    <Collapse in={open && openSupport} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>
+                            {[
+                                { text: 'Dashboard', path: '/support/dashboard', icon: <DashboardIcon /> },
+                                { text: 'Tablero Kanban', path: '/support/kanban', icon: <AssignmentIcon /> }
+                            ].map((item) => (
+                                <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+                                    <Tooltip title={!open ? item.text : ""} placement="right">
+                                        <ListItemButton
+                                            component={Link}
+                                            to={item.path}
+                                            onClick={isMobile ? handleDrawerClose : undefined}
+                                            sx={{
+                                                ...getListItemStyles(isActive(item.path)),
+                                                pl: open ? 4 : 2.5,
+                                            }}
+                                        >
+                                            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', color: isActive(item.path) ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                                                {item.icon}
+                                            </ListItemIcon>
+                                            <ListItemText primary={item.text} sx={{ opacity: open ? 1 : 0 }} />
+                                        </ListItemButton>
+                                    </Tooltip>
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Collapse>
 
                 </List>
             </Drawer>

@@ -5,6 +5,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
 } from 'react-router-dom';
 import { AccountForm } from './components/AccountForm';
 import { AccountList } from './components/AccountList';
@@ -13,7 +14,8 @@ import { Dashboard } from './components/Dashboard';
 import { Reports } from './components/Reports';
 import { EquipmentManagement } from './components/EquipmentManagement';
 import InventoryManagement from './components/InventoryManagement';
-import { TechnicalSupport } from './components/TechnicalSupport';
+import SupportDashboard from './components/SupportDashboard';
+import SupportKanban from './components/SupportKanban';
 import MiniDrawer from './components/MiniDrawer';
 import { FloatingNav } from './components/FloatingNav';
 import { ColorModeProvider } from './context/ThemeContext';
@@ -76,10 +78,9 @@ function App() {
             />
 
             {/* Soporte Técnico */}
-            <Route
-              path="/support"
-              element={<TechnicalSupport />}
-            />
+            <Route path="/support" element={<Navigate to="/support/dashboard" replace />} />
+            <Route path="/support/dashboard" element={<SupportDashboard />} />
+            <Route path="/support/kanban" element={<SupportKanban />} />
           </Routes>
         </MiniDrawer>
       </Router>
