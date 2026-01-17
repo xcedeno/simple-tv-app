@@ -22,6 +22,7 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  useTheme,
 } from '@mui/material';
 
 // IMPORTANTE: Importación correcta para MUI v6/v7 (Grid V2)
@@ -155,6 +156,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [searchResult, setSearchResult] = useState<{ device: Device; alias: string } | null>(null);
   const [openSearchModal, setOpenSearchModal] = useState(false);
+  const theme = useTheme();
 
   // Funciones de carga y lógica
   const fetchAccounts = useCallback(async () => {
@@ -297,9 +299,7 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
           Lista de Cuentas
         </Typography>
 
-        {/* Grid Container (V2) 
-          Usamos 'container' para habilitar el espaciado (spacing).
-        */}
+        {/* Grid Container (V2) */}
         <Grid container spacing={2} alignItems="center" style={{ marginBottom: '20px' }}>
 
           {/* Input de Búsqueda */}
@@ -313,9 +313,10 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
-                  backgroundColor: '#f5f5f5',
-                  '&:hover fieldset': { borderColor: '#3f51b5' },
-                  '&.Mui-focused fieldset': { borderColor: '#3f51b5' },
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f5f5f5',
+                  '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                  '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                  '& fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)' },
                 },
               }}
             />
@@ -345,11 +346,11 @@ export const AccountList: React.FC<AccountListProps> = ({ refresh }) => {
               size="small"
               sx={{
                 borderRadius: '12px',
-                backgroundColor: '#f5f5f5',
-                '&:hover': { backgroundColor: '#e0e0e0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#3f51b5' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#3f51b5' },
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f5f5f5',
+                '&:hover': { backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#e0e0e0' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : '#e0e0e0' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main },
               }}
             >
               <MenuItem value="">

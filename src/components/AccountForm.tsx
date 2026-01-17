@@ -13,7 +13,9 @@ import {
     Alert,
     Box,
     Divider,
-    Chip
+    Chip,
+    useTheme,
+    alpha
 } from '@mui/material';
 import { AddCircle, RemoveCircle, Save, Devices } from '@mui/icons-material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -146,6 +148,10 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
         }
     };
 
+    const theme = useTheme();
+
+    // ... (rest of the component logic remains same) ...
+
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Paper
@@ -155,15 +161,15 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                     margin: '40px auto',
                     padding: { xs: 3, md: 5 },
                     borderRadius: '24px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                    backgroundColor: '#ffffff',
+                    boxShadow: theme.palette.mode === 'dark' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 10px 40px rgba(0,0,0,0.08)',
+                    backgroundColor: theme.palette.background.paper, // Dynamic background
                 }}
             >
                 <Box mb={4} textAlign="center">
                     <Typography variant="overline" color="primary" sx={{ letterSpacing: 2, fontWeight: 700 }}>
                         GESTIÓN DE CUENTAS
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a237e', mt: 1 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 800, color: theme.palette.mode === 'dark' ? 'white' : '#1a237e', mt: 1 }}>
                         {account?.email ? 'Editar Cuenta' : 'Nueva Cuenta'}
                     </Typography>
                 </Box>
@@ -184,12 +190,12 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                 sx={{
                                     p: 3,
                                     borderRadius: '16px',
-                                    borderColor: 'rgba(0,0,0,0.08)',
-                                    backgroundColor: '#fafafa'
+                                    borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#fafafa'
                                 }}
                             >
                                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center' }}>
-                                    <Box component="span" sx={{ width: 4, height: 24, bgcolor: '#1a237e', mr: 2, borderRadius: 1 }} />
+                                    <Box component="span" sx={{ width: 4, height: 24, bgcolor: 'primary.main', mr: 2, borderRadius: 1 }} />
                                     Información General
                                 </Typography>
                                 <Grid container spacing={2}>
@@ -203,7 +209,10 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                             required
                                             variant="outlined"
                                             sx={{
-                                                '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#fff' }
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '12px',
+                                                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : '#fff'
+                                                }
                                             }}
                                         />
                                     </Grid>
@@ -215,7 +224,10 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                             onChange={handleAliasChange}
                                             variant="outlined"
                                             sx={{
-                                                '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#fff' }
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '12px',
+                                                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : '#fff'
+                                                }
                                             }}
                                         />
                                     </Grid>
@@ -226,8 +238,8 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                         {/* Sección de Dispositivos */}
                         <Grid size={{ xs: 12 }}>
                             <Box display="flex" alignItems="center" mb={2} mt={2}>
-                                <Devices sx={{ color: '#1a237e', mr: 1 }} />
-                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a237e' }}>
+                                <Devices sx={{ color: 'primary.main', mr: 1 }} />
+                                <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
                                     Dispositivos Asociados
                                 </Typography>
                                 <Chip
@@ -246,13 +258,13 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                         p: 3,
                                         mb: 3,
                                         borderRadius: '16px',
-                                        backgroundColor: '#fff',
-                                        border: '1px solid rgba(0,0,0,0.08)',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#fff',
+                                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+                                        boxShadow: theme.palette.mode === 'dark' ? 'none' : '0 4px 12px rgba(0,0,0,0.03)',
                                         transition: 'all 0.3s ease',
                                         '&:hover': {
-                                            boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
-                                            borderColor: 'rgba(0,0,0,0.12)'
+                                            boxShadow: theme.palette.mode === 'dark' ? '0 8px 24px rgba(0,0,0,0.2)' : '0 8px 24px rgba(0,0,0,0.06)',
+                                            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)'
                                         }
                                     }}
                                 >
@@ -260,7 +272,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1 }}>
                                             Dispositivo #{index + 1}
                                         </Typography>
-                                        <IconButton onClick={() => removeDevice(index)} color="error" size="small" sx={{ bgcolor: '#ffebee', '&:hover': { bgcolor: '#ffcdd2' } }}>
+                                        <IconButton onClick={() => removeDevice(index)} color="error" size="small" sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.2) } }}>
                                             <RemoveCircle fontSize="small" />
                                         </IconButton>
                                     </Box>
@@ -274,7 +286,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                                 onChange={(e) => handleDeviceChange(index, 'decoder_id', e.target.value)}
                                                 required
                                                 size="small"
-                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'inherit' } }}
                                             />
                                         </Grid>
                                         <Grid size={{ xs: 12, sm: 6 }}>
@@ -285,7 +297,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                                 onChange={(e) => handleDeviceChange(index, 'access_card_number', e.target.value)}
                                                 required
                                                 size="small"
-                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'inherit' } }}
                                             />
                                         </Grid>
                                         <Grid size={{ xs: 12, sm: 4 }}>
@@ -296,7 +308,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                                 value={device.balance}
                                                 onChange={(e) => handleDeviceChange(index, 'balance', Number(e.target.value))}
                                                 size="small"
-                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'inherit' } }}
                                             />
                                         </Grid>
                                         <Grid size={{ xs: 12, sm: 4 }}>
@@ -314,7 +326,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                                     textField: {
                                                         fullWidth: true,
                                                         size: 'small',
-                                                        sx: { '& .MuiOutlinedInput-root': { borderRadius: '10px' } }
+                                                        sx: { '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'inherit' } }
                                                     }
                                                 }}
                                             />
@@ -326,7 +338,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                                 value={device.room_number}
                                                 onChange={(e) => handleDeviceChange(index, 'room_number', e.target.value)}
                                                 size="small"
-                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'inherit' } }}
                                             />
                                         </Grid>
                                     </Grid>
@@ -346,7 +358,7 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                     color: 'text.secondary',
                                     '&:hover': {
                                         borderWidth: 2,
-                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                        backgroundColor: theme.palette.action.hover
                                     }
                                 }}
                             >
@@ -369,9 +381,10 @@ export const AccountForm: React.FC<Props> = ({ account, onSaved }) => {
                                     fontWeight: 700,
                                     fontSize: '1rem',
                                     boxShadow: '0 8px 20px rgba(26, 35, 126, 0.2)',
-                                    background: 'linear-gradient(45deg, #1a237e 30%, #283593 90%)',
+                                    background: theme.palette.primary.main, // Use theme primary
                                     '&:hover': {
                                         boxShadow: '0 12px 24px rgba(26, 35, 126, 0.3)',
+                                        background: theme.palette.primary.dark,
                                     }
                                 }}
                             >
