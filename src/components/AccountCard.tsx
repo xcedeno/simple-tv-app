@@ -1,7 +1,7 @@
 // src/components/AccountCard.tsx
 
 import React from 'react';
-import { Card, CardContent, Typography, Box, Chip, Divider, IconButton, Tooltip } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Divider, IconButton, Tooltip, useTheme, alpha } from '@mui/material';
 import dayjs from 'dayjs';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
@@ -28,11 +28,13 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
     // Obtener los días restantes
     const daysRemaining = getDaysRemaining(nearestCutoffDate);
 
+    const theme = useTheme();
+
     // Determinar el estado y color
     const getStatusInfo = (days: number) => {
-        if (days < 0) return { label: 'Vencido', color: '#d32f2f', bgColor: '#ffebee' };
-        if (days <= 5) return { label: 'Por Vencer', color: '#f57c00', bgColor: '#fff3e0' };
-        return { label: 'Activo', color: '#2e7d32', bgColor: '#e8f5e9' };
+        if (days < 0) return { label: 'Vencido', color: theme.palette.error.main, bgColor: alpha(theme.palette.error.main, 0.1) };
+        if (days <= 5) return { label: 'Por Vencer', color: theme.palette.warning.main, bgColor: alpha(theme.palette.warning.main, 0.1) };
+        return { label: 'Activo', color: theme.palette.success.main, bgColor: alpha(theme.palette.success.main, 0.1) };
     };
 
     const status = getStatusInfo(daysRemaining);
@@ -55,14 +57,14 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
             sx={{
                 height: '100%',
                 borderRadius: '20px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                boxShadow: theme.palette.mode === 'dark' ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)',
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                 '&:hover': {
                     transform: 'translateY(-5px)',
-                    boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
+                    boxShadow: theme.palette.mode === 'dark' ? '0 15px 35px rgba(0,0,0,0.6)' : '0 15px 35px rgba(0,0,0,0.1)',
                 },
-                border: '1px solid rgba(0,0,0,0.05)',
-                background: '#fff',
+                border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
+                // Removed hardcoded background to let MUI Paper handle it based on theme
                 overflow: 'visible',
                 position: 'relative'
             }}
@@ -74,7 +76,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
                         <Typography variant="overline" color="textSecondary" sx={{ fontWeight: 600, letterSpacing: 1 }}>
                             CUENTA
                         </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a237e', lineHeight: 1.2 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.2 }}>
                             {alias}
                         </Typography>
                     </Box>
@@ -90,13 +92,13 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
                     />
                 </Box>
 
-                <Divider sx={{ my: 2, opacity: 0.6 }} />
+                <Divider sx={{ my: 2, opacity: 0.1 }} />
 
                 {/* Información de Fecha */}
                 <Box display="flex" alignItems="center" mb={2}>
                     <Box
                         sx={{
-                            backgroundColor: '#e3f2fd',
+                            backgroundColor: alpha(theme.palette.primary.main, 0.1),
                             borderRadius: '12px',
                             p: 1,
                             mr: 2,
@@ -105,13 +107,13 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
                             justifyContent: 'center'
                         }}
                     >
-                        <CalendarTodayIcon sx={{ color: '#1976d2', fontSize: 20 }} />
+                        <CalendarTodayIcon color="primary" sx={{ fontSize: 20 }} />
                     </Box>
                     <Box>
                         <Typography variant="caption" color="textSecondary" display="block">
                             Próximo Corte
                         </Typography>
-                        <Typography variant="body1" fontWeight={600}>
+                        <Typography variant="body1" fontWeight={600} color="textPrimary">
                             {dayjs(nearestCutoffDate).format('DD MMM YYYY')}
                         </Typography>
                     </Box>
@@ -121,7 +123,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
                 <Box display="flex" alignItems="center" mb={3}>
                     <Box
                         sx={{
-                            backgroundColor: '#f3e5f5',
+                            backgroundColor: alpha(theme.palette.secondary.main, 0.1),
                             borderRadius: '12px',
                             p: 1,
                             mr: 2,
@@ -130,13 +132,13 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
                             justifyContent: 'center'
                         }}
                     >
-                        <MeetingRoomIcon sx={{ color: '#7b1fa2', fontSize: 20 }} />
+                        <MeetingRoomIcon color="secondary" sx={{ fontSize: 20 }} />
                     </Box>
                     <Box>
                         <Typography variant="caption" color="textSecondary" display="block">
                             Habitaciones
                         </Typography>
-                        <Typography variant="body2" fontWeight={500} sx={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <Typography variant="body2" fontWeight={500} color="textPrimary" sx={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {roomNumbers.length > 0 ? roomNumbers.join(', ') : 'Sin asignar'}
                         </Typography>
                     </Box>
@@ -167,12 +169,12 @@ export const AccountCard: React.FC<AccountCardProps> = ({ alias, email, nearestC
                     </Box>
                     <Box display="flex" gap={1}>
                         <Tooltip title="Enviar WhatsApp">
-                            <IconButton size="small" onClick={handleWhatsApp} sx={{ color: '#25D366', backgroundColor: '#e8f5e9', '&:hover': { backgroundColor: '#c8e6c9' } }}>
+                            <IconButton size="small" onClick={handleWhatsApp} sx={{ color: '#25D366', backgroundColor: alpha('#25D366', 0.1), '&:hover': { backgroundColor: alpha('#25D366', 0.2) } }}>
                                 <WhatsAppIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Enviar Correo">
-                            <IconButton size="small" onClick={handleEmail} sx={{ color: '#1976d2', backgroundColor: '#e3f2fd', '&:hover': { backgroundColor: '#bbdefb' } }}>
+                            <IconButton size="small" onClick={handleEmail} sx={{ color: theme.palette.info.main, backgroundColor: alpha(theme.palette.info.main, 0.1), '&:hover': { backgroundColor: alpha(theme.palette.info.main, 0.2) } }}>
                                 <EmailIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>

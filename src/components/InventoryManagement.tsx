@@ -154,7 +154,13 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
 
     // Mobile Card Component
     const InventoryCard = ({ item }: { item: InventoryItem }) => (
-        <Card sx={{ mb: 2, borderRadius: '16px', boxShadow: 3 }}>
+        <Card sx={{
+            mb: 2,
+            borderRadius: '16px',
+            boxShadow: 3,
+            bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : '#fff',
+            color: 'text.primary'
+        }}>
             <CardContent sx={{ pb: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="h6" fontWeight="bold" color="primary">
@@ -192,7 +198,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                     )}
                 </Stack>
             </CardContent>
-            <CardActions sx={{ justifyContent: 'flex-end', borderTop: '1px solid #eee', p: 1 }}>
+            <CardActions sx={{ justifyContent: 'flex-end', borderTop: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid #eee', p: 1 }}>
                 <Button
                     size="small"
                     startIcon={<EditIcon />}
@@ -216,7 +222,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
         <Box>
 
 
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#1a237e' }}>Explorar por Categoría</Typography>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: theme.palette.mode === 'dark' ? 'text.primary' : '#1a237e' }}>Explorar por Categoría</Typography>
 
             <Grid container spacing={2} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 6, sm: 4, md: 2 }}>
@@ -225,15 +231,15 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                         sx={{
                             borderRadius: '16px',
                             cursor: 'pointer',
-                            bgcolor: typeFilter === null ? '#1a237e' : 'white',
-                            color: typeFilter === null ? 'white' : 'inherit',
+                            bgcolor: typeFilter === null ? 'primary.main' : (theme.palette.mode === 'dark' ? 'background.paper' : 'white'),
+                            color: typeFilter === null ? 'white' : 'text.primary',
                             transition: 'all 0.3s ease',
-                            border: '1px solid #1a237e',
+                            border: typeFilter === null ? 'none' : (theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid #1a237e'),
                             '&:hover': { transform: 'scale(1.05)', boxShadow: 4 }
                         }}
                     >
                         <CardActionArea sx={{ p: 2, textAlign: 'center' }}>
-                            <DevicesOtherIcon fontSize="large" sx={{ mb: 1 }} />
+                            <DevicesOtherIcon fontSize="large" sx={{ mb: 1, color: typeFilter === null ? 'inherit' : 'primary.main' }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>TODOS</Typography>
                         </CardActionArea>
                     </Card>
@@ -245,10 +251,10 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                             sx={{
                                 borderRadius: '16px',
                                 cursor: 'pointer',
-                                bgcolor: typeFilter === type ? '#1a237e' : 'white',
-                                color: typeFilter === type ? 'white' : 'inherit',
+                                bgcolor: typeFilter === type ? 'primary.main' : (theme.palette.mode === 'dark' ? 'background.paper' : 'white'),
+                                color: typeFilter === type ? 'white' : 'text.primary',
                                 transition: 'all 0.3s ease',
-                                border: '1px solid #e0e0e0',
+                                border: typeFilter === type ? 'none' : (theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0'),
                                 '&:hover': { transform: 'scale(1.05)', boxShadow: 4 }
                             }}
                         >
@@ -267,7 +273,13 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
                         placeholder="Buscar por habitación, modelo o serial..."
                         variant="outlined" size="small" value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        sx={{ width: { xs: '100%', md: 400 }, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={{
+                            width: { xs: '100%', md: 400 },
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: '12px',
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'white'
+                            }
+                        }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
@@ -299,9 +311,9 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
             </Box>
 
             {!isMobile ? (
-                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #eee', borderRadius: '15px', overflow: 'hidden' }}>
+                <TableContainer component={Paper} elevation={0} sx={{ border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid #eee', borderRadius: '15px', overflow: 'hidden', bgcolor: 'background.paper' }}>
                     <Table sx={{ minWidth: 650 }}>
-                        <TableHead sx={{ bgcolor: '#f1f3f4' }}>
+                        <TableHead sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f1f3f4' }}>
                             <TableRow>
                                 <TableCell><strong>ITEM</strong></TableCell>
                                 <TableCell><strong>HABITACIÓN</strong></TableCell>
@@ -396,7 +408,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
 
             {/* Dialog de Edición */}
             <Dialog open={editDialogOpen} onClose={() => !saving && setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ bgcolor: '#1a237e', color: 'white' }}>Editar Equipo</DialogTitle>
+                <DialogTitle sx={{ bgcolor: theme.palette.mode === 'dark' ? 'primary.dark' : '#1a237e', color: 'white' }}>Editar Equipo</DialogTitle>
                 <DialogContent sx={{ mt: 2 }}>
                     <Stack spacing={2} sx={{ pt: 1 }}>
                         <TextField
@@ -483,6 +495,7 @@ const InventoryTableDisplay: React.FC<{ items: InventoryItem[], onUpdate: () => 
 
 // --- Subcomponent: Manual Entry Form ---
 const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+    const theme = useTheme();
     const [formData, setFormData] = useState<Partial<InventoryItem>>({
         item_number: 0,
         equipment_type: 'TELEVISOR',
@@ -622,7 +635,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
                     <FormControlLabel
                         control={
                             <Checkbox
-                                sx={{ color: 'rgba(255,255,255,0.7)' }}
+                                sx={{ color: theme.palette.text.primary }}
                                 checked={formData.is_smart_tv}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, is_smart_tv: e.target.checked })}
                             />
@@ -649,6 +662,7 @@ const ManualEntryForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
 
 // --- Subcomponent: InventoryUpload ---
 const InventoryUploadForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+    const theme = useTheme();
     const [file, setFile] = useState<File | null>(null);
     const [previewData, setPreviewData] = useState<InventoryItem[]>([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -787,14 +801,15 @@ const InventoryUploadForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
             />
             <Box
                 sx={{
-                    border: '2px dashed #1a237e',
+                    border: '2px dashed',
+                    borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : '#1a237e',
                     borderRadius: '20px',
                     p: 6,
                     textAlign: 'center',
                     cursor: 'pointer',
                     mb: 3,
-                    bgcolor: '#f8f9fa',
-                    '&:hover': { bgcolor: '#f0f2f5' }
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f8f9fa',
+                    '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : '#f0f2f5' }
                 }}
                 onClick={() => document.getElementById('excel-upload')?.click()}
             >
